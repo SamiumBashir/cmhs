@@ -1,0 +1,1 @@
+{"execMap": {"js": "node"}, "ext": "js,mjs,json", "ignore": ["node_modules", "dist"], "watch": ["src"]}

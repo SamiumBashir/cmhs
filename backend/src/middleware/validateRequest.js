@@ -1,0 +1,14 @@
+import { validationResult } from 'express-validator'
+import { StatusCodes } from 'http-status-codes'
+import ApiError from '../utils/ApiError.js'
+
+const validateRequest = (req, res, next) => {
+  const errors = validationResult(req)
+  if (!errors.isEmpty()) {
+    const message = errors.array().map(err => err.msg).join(', ')
+    return next(new ApiError(StatusCodes.BAD_REQUEST, message))
+  }
+  next()
+}
+
+export default validateRequest

@@ -1,0 +1,6 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="400" height="400" viewBox="0 0 400 400">
+  <rect width="400" height="400" fill="#e2e8f0"/>
+  <circle cx="200" cy="140" r="50" fill="#94a3b8"/>
+  <rect x="130" y="190" width="140" height="140" rx="70" fill="#94a3b8"/>
+  <text x="200" y="370" text-anchor="middle" fill="#64748b" font-size="14" font-family="Inter,sans-serif">Principal Photo</text>
+</svg>
