@@ -5,7 +5,7 @@ import Button from '../../components/ui/Button'
 import Card from '../../components/ui/Card'
 import StatCard from '../../components/ui/StatCard'
 import { useQuery } from '@tanstack/react-query'
-import { noticeService, eventService, galleryService, settingsService } from '../../services'
+import { homepageService, noticeService, eventService, galleryService, settingsService } from '../../services'
 import { useLanguage } from '../../context/LanguageContext'
 
 const fadeInUp = {
@@ -16,6 +16,11 @@ const fadeInUp = {
 
 const Home = () => {
   const { language } = useLanguage()
+
+  const { data: homepageData, isLoading: homepageLoading } = useQuery({
+    queryKey: ['homepage'],
+    queryFn: () => homepageService.get().then(r => r.data.data)
+  })
 
   const { data: settings, isLoading: settingsLoading } = useQuery({
     queryKey: ['settings'],
@@ -57,12 +62,25 @@ const Home = () => {
     return language === 'bn' ? (obj.bn || obj.en || '') : (obj.en || obj.bn || '')
   }
 
-  const stats = [
-    { label: language === 'bn' ? 'শিক্ষার্থী' : 'Students', value: '1,200+', icon: <FiUsers size={28} /> },
-    { label: language === 'bn' ? 'শিক্ষক' : 'Teachers', value: '45+', icon: <FiUserCheck size={28} /> },
-    { label: language === 'bn' ? 'কার্যক্রম' : 'Programs', value: '25+', icon: <FiBook size={28} /> },
-    { label: language === 'bn' ? 'প্রতিষ্ঠাকাল' : 'Established', value: settings?.established || '1985', icon: <FiAward size={28} /> }
-  ]
+  const heroSlide = homepageData?.heroSlides?.[0]
+  const heroTitle = heroSlide ? getTitle(heroSlide.title) : schoolName
+  const heroSubtitle = heroSlide ? getTitle(heroSlide.subtitle) : (language === 'bn'
+    ? 'মানসম্মত শিক্ষা, মানবিক মূল্যবোধ এবং সর্বাঙ্গীন সমৃদ্ধির প্রত্যয়ে আমাদের নিরন্তর পথচলা।'
+    : 'Empowering students with quality education, holistic development, and a commitment to excellence.')
+
+  const dynamicStats = homepageData?.statistics?.length > 0
+    ? homepageData.statistics.map(s => ({
+        label: getTitle(s.label),
+        value: s.value,
+        icon: <FiUsers size={28} />
+      }))
+    : [
+        { label: language === 'bn' ? 'শিক্ষার্থী' : 'Students', value: '1,200+', icon: <FiUsers size={28} /> },
+        { label: language === 'bn' ? 'শিক্ষক' : 'Teachers', value: '45+', icon: <FiUserCheck size={28} /> },
+        { label: language === 'bn' ? 'কার্যক্রম' : 'Programs', value: '25+', icon: <FiBook size={28} /> },
+        { label: language === 'bn' ? 'প্রতিষ্ঠাকাল' : 'Established', value: settings?.established || '1985', icon: <FiAward size={28} /> }
+      ]
+
 
   return (
     <>
@@ -79,17 +97,15 @@ const Home = () => {
             animate={{ opacity: 1, x: 0 }}
             transition={{ duration: 0.6 }}
           >
-            {settingsLoading ? (
+            {settingsLoading || homepageLoading ? (
               <div className="h-12 w-80 bg-gray-200 rounded animate-pulse mb-4" />
             ) : (
               <h1 className="text-4xl md:text-5xl font-bold text-gray-900 mb-4">
-                {schoolName}
+                {heroTitle}
               </h1>
             )}
             <p className="text-xl text-gray-600 mb-8 max-w-2xl">
-              {language === 'bn'
-                ? 'মানসম্মত শিক্ষা, মানবিক মূল্যবোধ এবং সর্বাঙ্গীন সমৃদ্ধির প্রত্যয়ে আমাদের নিরন্তর পথচলা।'
-                : 'Empowering students with quality education, holistic development, and a commitment to excellence.'}
+              {heroSubtitle}
             </p>
             <div className="flex gap-4">
               <Link to="/admission">
@@ -106,7 +122,7 @@ const Home = () => {
       <section className="py-16 bg-white">
         <div className="container mx-auto px-4">
           <div className="grid grid-cols-1 md:grid-cols-4 gap-6">
-            {stats.map((stat, index) => (
+            {dynamicStats.map((stat, index) => (
               <motion.div
                 key={stat.label}
                 {...fadeInUp}
@@ -123,6 +139,7 @@ const Home = () => {
           </div>
         </div>
       </section>
+
 
       <section className="py-16">
         <div className="container mx-auto px-4">

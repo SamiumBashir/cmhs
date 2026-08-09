@@ -21,10 +21,15 @@ api.interceptors.request.use(
 api.interceptors.response.use(
   (response) => response,
   (error) => {
-    const message =
-      error.response?.data?.message ||
-      error.message ||
-      'Something went wrong'
+    let message = error.response?.data?.message
+
+    if (!message) {
+      if (error.code === 'ERR_NETWORK' || error.message === 'Network Error') {
+        message = 'Cannot connect to backend server (Port 5000). Please check if backend server and MongoDB are running.'
+      } else {
+        message = error.message || 'Something went wrong'
+      }
+    }
 
     if (error.response?.status === 401) {
       localStorage.removeItem('token')

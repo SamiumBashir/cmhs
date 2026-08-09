@@ -5,7 +5,10 @@ const teacherSchema = new mongoose.Schema({
     bn: { type: String, required: true },
     en: { type: String, required: true }
   },
-  email: { type: String, required: true, unique: true, lowercase: true },
+  email: { type: String, unique: true, sparse: true, lowercase: true },
+  password: { type: String },
+  employeeId: { type: String, unique: true, sparse: true },
+  teacherId: { type: String, unique: true, sparse: true },
   phone: String,
   subject: [String],
   class: [String],
@@ -20,7 +23,6 @@ const teacherSchema = new mongoose.Schema({
   }
 }, { timestamps: true })
 
-teacherSchema.index({ email: 1 }, { unique: true })
 teacherSchema.index({ 'name.bn': 1 })
 teacherSchema.index({ 'name.en': 1 })
 

@@ -25,6 +25,7 @@ class BaseService {
   }
 
   async create(data) {
+    if (data && data.email === '') delete data.email
     return await this.model.create(data)
   }
 
@@ -32,6 +33,7 @@ class BaseService {
     if (!mongoose.Types.ObjectId.isValid(id)) {
       throw new ApiError(StatusCodes.BAD_REQUEST, 'Invalid ID')
     }
+    if (data && data.email === '') delete data.email
     return await this.model.findByIdAndUpdate(id, { $set: data }, { new: true, runValidators: true }).exec()
   }
 

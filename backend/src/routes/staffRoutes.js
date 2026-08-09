@@ -9,8 +9,8 @@ const router = express.Router()
 const staffValidation = [
   body('name.bn').notEmpty().withMessage('Bengali name is required'),
   body('name.en').notEmpty().withMessage('English name is required'),
-  body('email').isEmail().withMessage('Valid email is required'),
-  body('role').notEmpty().withMessage('Role is required'),
+  body('email').optional({ checkFalsy: true }).isEmail().withMessage('Valid email format required'),
+  body('role').optional(),
   body('status').optional().isIn(['active', 'inactive'])
 ]
 

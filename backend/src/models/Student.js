@@ -13,6 +13,8 @@ const studentSchema = new mongoose.Schema({
   bloodGroup: String,
   phone: String,
   email: { type: String, lowercase: true },
+  password: { type: String },
+  studentId: { type: String, sparse: true },
   parentName: {
     bn: String,
     en: String
@@ -28,7 +30,7 @@ const studentSchema = new mongoose.Schema({
   avatar: String
 }, { timestamps: true })
 
-studentSchema.index({ rollNumber: 1 }, { unique: true })
+studentSchema.index({ rollNumber: 1, class: 1 }, { sparse: true })
 studentSchema.index({ class: 1 })
 studentSchema.index({ 'name.bn': 1 })
 studentSchema.index({ 'name.en': 1 })

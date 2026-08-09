@@ -1,7 +1,7 @@
 import express from 'express'
 import { body } from 'express-validator'
 import validate from '../middleware/validation.js'
-import { login, register, getMe, updateProfile } from '../controllers/authController.js'
+import { login, register, getMe, updateProfile, logout, refreshToken } from '../controllers/authController.js'
 import auth from '../middleware/auth.js'
 
 const router = express.Router()
@@ -23,8 +23,10 @@ router.post('/register', [
   body('role').isIn(['super_admin', 'admin', 'teacher', 'student', 'editor', 'moderator']).optional()
 ], validate, register)
 
+router.post('/logout', logout)
+router.post('/refresh', refreshToken)
 router.get('/me', auth, getMe)
-
 router.put('/profile', auth, updateProfile)
 
 export default router
+

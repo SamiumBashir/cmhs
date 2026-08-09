@@ -5,6 +5,7 @@ import { settingsService } from '../services'
 import Button from '../components/ui/Button'
 import Input from '../components/ui/Input'
 import LoadingSpinner from '../components/ui/LoadingSpinner'
+import ImageUploader from '../components/ui/ImageUploader'
 
 const AdminSettings = () => {
   const queryClient = useQueryClient()
@@ -130,12 +131,13 @@ const AdminSettings = () => {
               value={settings.website || ''}
               onChange={(e) => updateSetting('website', e.target.value)}
             />
-            <Input
-              label="Logo URL"
-              placeholder="https://..."
-              value={settings.logo || ''}
-              onChange={(e) => updateSetting('logo', e.target.value)}
-            />
+            <div className="md:col-span-2">
+              <ImageUploader
+                label="School Logo (Select from Computer or Paste Link)"
+                value={settings.logo || ''}
+                onChange={(newUrl) => updateSetting('logo', newUrl)}
+              />
+            </div>
             <div className="md:col-span-2 space-y-4">
               <Input
                 label="Address (English)"

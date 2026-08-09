@@ -47,8 +47,9 @@ const NotFound = lazy(() => import('./pages/NotFound'))
 
 const AdminRedirect = () => {
   useEffect(() => {
-    window.location.href = 'http://localhost:5174'
+    window.location.href = import.meta.env.VITE_ADMIN_URL || 'http://localhost:5174'
   }, [])
+
   return (
     <div className="flex items-center justify-center min-h-screen">
       <LoadingSpinner size="xl" />

@@ -39,7 +39,6 @@ const subjectSchema = new mongoose.Schema({
   }
 }, { timestamps: true })
 
-subjectSchema.index({ code: 1 }, { unique: true })
 subjectSchema.index({ class: 1, isElective: 1 })
 
 const Subject = mongoose.model('Subject', subjectSchema)

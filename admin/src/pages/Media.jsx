@@ -7,6 +7,7 @@ import Card from '../components/ui/Card'
 import Button from '../components/ui/Button'
 import Input from '../components/ui/Input'
 import LoadingSpinner from '../components/ui/LoadingSpinner'
+import ImageUploader from '../components/ui/ImageUploader'
 
 const AdminMedia = () => {
   const queryClient = useQueryClient()
@@ -44,27 +45,31 @@ const AdminMedia = () => {
 
       <Card className="p-6">
         <h2 className="text-lg font-semibold text-gray-900 mb-4">Add Media Asset</h2>
-        <div className="grid grid-cols-1 md:grid-cols-3 gap-4 items-end">
+        <div className="space-y-4">
           <Input
             label="File Name"
             placeholder="e.g. School Hero Banner"
             value={newMedia.name}
             onChange={(e) => setNewMedia({ ...newMedia, name: e.target.value })}
           />
-          <Input
-            label="Image / File URL"
-            placeholder="https://images.unsplash.com/..."
+          <ImageUploader
+            label="Select Picture from Local Machine"
             value={newMedia.url}
-            onChange={(e) => setNewMedia({ ...newMedia, url: e.target.value })}
+            onChange={(newUrl) => {
+              const fileName = newMedia.name || newUrl.split('/').pop() || 'Uploaded Media'
+              setNewMedia({ ...newMedia, url: newUrl, name: fileName })
+            }}
           />
-          <Button
-            variant="primary"
-            icon={<FiUploadCloud />}
-            onClick={() => uploadMutation.mutate(newMedia)}
-            disabled={uploadMutation.isPending || !newMedia.name || !newMedia.url}
-          >
-            Add to Library
-          </Button>
+          <div className="flex justify-end">
+            <Button
+              variant="primary"
+              icon={<FiUploadCloud />}
+              onClick={() => uploadMutation.mutate(newMedia)}
+              disabled={uploadMutation.isPending || !newMedia.name || !newMedia.url}
+            >
+              Save to Library
+            </Button>
+          </div>
         </div>
       </Card>
 

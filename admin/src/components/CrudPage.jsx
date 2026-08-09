@@ -25,6 +25,14 @@ const setNestedValue = (obj, path, value) => {
   return { ...obj }
 }
 
+import ImageUploader from './ui/ImageUploader'
+
+const isImageField = (field) => {
+  if (field.type === 'image' || field.type === 'file') return true
+  const name = (field.name || '').toLowerCase()
+  return name.includes('image') || name.includes('avatar') || name.includes('logo') || name.includes('photo') || name.includes('fileurl') || name.includes('picture')
+}
+
 const Form = ({ fields, initialValues, onSubmit, loading, onCancel, error }) => {
   const [formData, setFormData] = useState(() => {
     try {
@@ -63,6 +71,19 @@ const Form = ({ fields, initialValues, onSubmit, loading, onCancel, error }) => 
       {fields.map((field) => {
         const rawVal = getNestedValue(formData, field.name)
         const value = rawVal !== '' ? rawVal : (field.default !== undefined ? field.default : '')
+
+        if (isImageField(field)) {
+          return (
+            <div key={field.name}>
+              <ImageUploader
+                label={field.label}
+                value={value || ''}
+                onChange={(newUrl) => handleChange(field.name, newUrl)}
+                placeholder={field.placeholder}
+              />
+            </div>
+          )
+        }
 
         if (field.type === 'select') {
           return (

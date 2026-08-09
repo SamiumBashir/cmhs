@@ -16,6 +16,4 @@ const pageSchema = new mongoose.Schema({
   metaDescription: { type: String, default: '' }
 }, { timestamps: true })
 
-pageSchema.index({ slug: 1 })
-
 export default mongoose.model('Page', pageSchema)

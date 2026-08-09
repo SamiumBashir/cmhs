@@ -27,6 +27,7 @@ const Navbar = () => {
   const [searchQuery, setSearchQuery] = useState('')
   const { theme, toggleTheme } = useTheme()
   const { language, toggleLanguage } = useLanguage()
+  const adminLoginUrl = `${import.meta.env.VITE_ADMIN_URL || 'http://localhost:5174'}/login`
 
   const { data: settings } = useQuery({
     queryKey: ['settings'],
@@ -117,8 +118,8 @@ const Navbar = () => {
             >
               {theme === 'light' ? <FiMoon size={18} /> : <FiSun size={18} />}
             </button>
-            <a href="http://localhost:5174/login" className="hidden md:inline-block">
-              <Button variant="primary" size="sm">Login</Button>
+            <a href={adminLoginUrl} className="hidden md:inline-block">
+              <Button variant="primary" size="sm">{language === 'bn' ? 'লগইন' : 'Login'}</Button>
             </a>
             <button
               onClick={() => setIsMobileMenuOpen(!isMobileMenuOpen)}
@@ -177,8 +178,8 @@ const Navbar = () => {
                   <FiGlobe size={18} className="text-primary" />
                   {language === 'bn' ? 'Switch to English' : 'বাংলায় দেখুন'}
                 </button>
-                <a href="http://localhost:5174/login" className="flex-1" onClick={closeMobileMenu}>
-                  <Button variant="primary" className="w-full">Login</Button>
+                <a href={adminLoginUrl} className="flex-1" onClick={closeMobileMenu}>
+                  <Button variant="primary" className="w-full">{language === 'bn' ? 'লগইন' : 'Login'}</Button>
                 </a>
               </div>
             </nav>

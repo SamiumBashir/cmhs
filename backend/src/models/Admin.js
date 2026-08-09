@@ -19,7 +19,6 @@ const adminSchema = new mongoose.Schema({
   permissions: [{ type: String }]
 }, { timestamps: true })
 
-adminSchema.index({ email: 1 }, { unique: true })
 adminSchema.index({ role: 1 })
 
 export default mongoose.model('Admin', adminSchema)

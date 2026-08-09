@@ -1,4 +1,5 @@
 import express from 'express'
+import path from 'path'
 import cors from 'cors'
 import helmet from 'helmet'
 import compression from 'compression'
@@ -36,6 +37,8 @@ import menuRoutes from './routes/menuRoutes.js'
 import pageRoutes from './routes/pageRoutes.js'
 import faqRoutes from './routes/faqRoutes.js'
 import downloadRoutes from './routes/downloadRoutes.js'
+import adminRoutes from './routes/adminRoutes.js'
+import auditLogRoutes from './routes/auditLogRoutes.js'
 
 dotenv.config()
 
@@ -68,6 +71,8 @@ app.use(compression())
 app.use(morgan('combined'))
 app.use(express.json({ limit: '10mb' }))
 app.use(express.urlencoded({ extended: true, limit: '10mb' }))
+app.use('/uploads', express.static(path.join(process.cwd(), 'uploads')))
+app.use('/api/uploads', express.static(path.join(process.cwd(), 'uploads')))
 app.use(cookieParser())
 app.use(mongoSanitize())
 app.use(xssClean())
@@ -105,6 +110,8 @@ app.use('/api/menus', menuRoutes)
 app.use('/api/pages', pageRoutes)
 app.use('/api/faq', faqRoutes)
 app.use('/api/downloads', downloadRoutes)
+app.use('/api/admin/users', adminRoutes)
+app.use('/api/audit-logs', auditLogRoutes)
 
 app.get('/api/health', (req, res) => {
   res.json({ success: true, message: 'School Management API is running', timestamp: new Date().toISOString() })

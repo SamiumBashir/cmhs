@@ -68,27 +68,24 @@ const Login = () => {
         <button
           type="button"
           onClick={() => handleRoleSwitch('admin')}
-          className={`flex-1 flex items-center justify-center gap-1.5 py-2 rounded-lg text-xs font-semibold transition-all ${
-            roleTab === 'admin' ? 'bg-primary text-white shadow-md' : 'text-white/70 hover:text-white'
-          }`}
+          className={`flex-1 flex items-center justify-center gap-1.5 py-2 rounded-lg text-xs font-semibold transition-all ${roleTab === 'admin' ? 'bg-primary text-white shadow-md' : 'text-white/70 hover:text-white'
+            }`}
         >
           <FiShield size={14} /> Admin
         </button>
         <button
           type="button"
           onClick={() => handleRoleSwitch('teacher')}
-          className={`flex-1 flex items-center justify-center gap-1.5 py-2 rounded-lg text-xs font-semibold transition-all ${
-            roleTab === 'teacher' ? 'bg-primary text-white shadow-md' : 'text-white/70 hover:text-white'
-          }`}
+          className={`flex-1 flex items-center justify-center gap-1.5 py-2 rounded-lg text-xs font-semibold transition-all ${roleTab === 'teacher' ? 'bg-primary text-white shadow-md' : 'text-white/70 hover:text-white'
+            }`}
         >
           <FiUserCheck size={14} /> Teacher
         </button>
         <button
           type="button"
           onClick={() => handleRoleSwitch('student')}
-          className={`flex-1 flex items-center justify-center gap-1.5 py-2 rounded-lg text-xs font-semibold transition-all ${
-            roleTab === 'student' ? 'bg-primary text-white shadow-md' : 'text-white/70 hover:text-white'
-          }`}
+          className={`flex-1 flex items-center justify-center gap-1.5 py-2 rounded-lg text-xs font-semibold transition-all ${roleTab === 'student' ? 'bg-primary text-white shadow-md' : 'text-white/70 hover:text-white'
+            }`}
         >
           <FiBookOpen size={14} /> Student
         </button>

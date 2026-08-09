@@ -1,6 +1,7 @@
 import mongoose from 'mongoose'
 
 const admissionSchema = new mongoose.Schema({
+  formNumber: { type: String, unique: true, sparse: true },
   studentName: {
     bn: { type: String, required: true },
     en: { type: String, required: true }

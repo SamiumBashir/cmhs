@@ -1,6 +1,8 @@
 import mongoose from 'mongoose'
 import bcrypt from 'bcryptjs'
 import Admin from '../models/Admin.js'
+import Teacher from '../models/Teacher.js'
+import Student from '../models/Student.js'
 import Settings from '../models/Settings.js'
 import Menu from '../models/Menu.js'
 import Faq from '../models/Faq.js'
@@ -37,6 +39,18 @@ const seedDefaultUsers = async () => {
       },
       { upsert: true, new: true, setDefaultsOnInsert: true }
     )
+    await Teacher.findOneAndUpdate(
+      { email: 'teacher@cmhs.edu.bd' },
+      {
+        name: { en: 'Demo Teacher', bn: 'ডেমো শিক্ষক' },
+        email: 'teacher@cmhs.edu.bd',
+        password: teacherPassword,
+        teacherId: 'T-101',
+        phone: '01700000001',
+        status: 'active'
+      },
+      { upsert: true, new: true, setDefaultsOnInsert: true }
+    )
 
     // 3. Seed Student
     const studentPassword = await bcrypt.hash('student123', 12)
@@ -49,6 +63,20 @@ const seedDefaultUsers = async () => {
         role: 'student',
         studentId: 'S-1001',
         rollNumber: '1001',
+        phone: '01700000002',
+        status: 'active'
+      },
+      { upsert: true, new: true, setDefaultsOnInsert: true }
+    )
+    await Student.findOneAndUpdate(
+      { email: 'student@cmhs.edu.bd' },
+      {
+        name: { en: 'Demo Student', bn: 'ডেমো ছাত্র' },
+        email: 'student@cmhs.edu.bd',
+        password: studentPassword,
+        studentId: 'S-1001',
+        rollNumber: '1001',
+        class: '10',
         phone: '01700000002',
         status: 'active'
       },
@@ -150,15 +178,31 @@ const seedDefaultUsers = async () => {
   }
 }
 
-const connectDB = async () => {
-  try {
-    const conn = await mongoose.connect(process.env.MONGODB_URI || 'mongodb://127.0.0.1:27017/school-management')
-    console.log(`MongoDB Connected: ${conn.connection.host}`)
-    await seedDefaultUsers()
-  } catch (error) {
-    console.error(`Error: ${error.message}`)
-    process.exit(1)
+const connectDB = async (retries = 5, delayMs = 3000) => {
+  const uri = process.env.MONGODB_URI || 'mongodb://127.0.0.1:27017/school-management'
+  for (let attempt = 1; attempt <= retries; attempt++) {
+    try {
+      const conn = await mongoose.connect(uri)
+      console.log(`MongoDB Connected: ${conn.connection.host}`)
+
+      try { await mongoose.connection.collection('admissions').dropIndex('formNumber_1') } catch (e) {}
+      try { await mongoose.connection.collection('teachers').dropIndex('employeeId_1') } catch (e) {}
+      try { await mongoose.connection.collection('teachers').dropIndex('teacherId_1') } catch (e) {}
+      try { await mongoose.connection.collection('staffs').dropIndex('employeeId_1') } catch (e) {}
+      try { await mongoose.connection.collection('staffs').dropIndex('staffId_1') } catch (e) {}
+
+      await seedDefaultUsers()
+      return conn
+    } catch (error) {
+      console.error(`MongoDB connection attempt ${attempt}/${retries} failed: ${error.message}`)
+      if (attempt === retries) {
+        console.error('Failed to connect to MongoDB after multiple attempts. Please ensure MongoDB is running.')
+        process.exit(1)
+      }
+      await new Promise(res => setTimeout(res, delayMs))
+    }
   }
 }
 
 export default connectDB
+

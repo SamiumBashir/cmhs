@@ -7,6 +7,7 @@ import Button from '../components/ui/Button'
 import Input from '../components/ui/Input'
 import Textarea from '../components/ui/Textarea'
 import LoadingSpinner from '../components/ui/LoadingSpinner'
+import ImageUploader from '../components/ui/ImageUploader'
 
 const AdminCms = () => {
   const queryClient = useQueryClient()
@@ -221,12 +222,13 @@ const AdminCms = () => {
                     value={slide.buttonLink || ''}
                     onChange={(e) => handleUpdateHeroSlide(index, 'buttonLink', null, e.target.value)}
                   />
-                  <Input
-                    label="Background Image URL"
-                    placeholder="https://..."
-                    value={slide.image || ''}
-                    onChange={(e) => handleUpdateHeroSlide(index, 'image', null, e.target.value)}
-                  />
+                  <div className="md:col-span-2">
+                    <ImageUploader
+                      label="Background Image (Select from Computer or Paste Link)"
+                      value={slide.image || ''}
+                      onChange={(newUrl) => handleUpdateHeroSlide(index, 'image', null, newUrl)}
+                    />
+                  </div>
                 </div>
               </Card>
             ))}

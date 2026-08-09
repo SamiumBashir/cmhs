@@ -94,6 +94,9 @@ export const homepageService = {
 export const mediaService = {
   getAll: (params) => api.get('/media', { params }),
   getById: (id) => api.get(`/media/${id}`),
+  upload: (formData) => api.post('/media/upload', formData, {
+    headers: { 'Content-Type': 'multipart/form-data' }
+  }),
   create: (data) => api.post('/media', data),
   update: (id, data) => api.put(`/media/${id}`, data),
   remove: (id) => api.delete(`/media/${id}`)
