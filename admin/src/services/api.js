@@ -25,7 +25,7 @@ api.interceptors.response.use(
 
     if (!message) {
       if (error.code === 'ERR_NETWORK' || error.message === 'Network Error') {
-        message = 'Cannot connect to backend server (Port 5000). Please check if backend server and MongoDB are running.'
+        message = 'Unable to connect to the backend server. Please check your network connection or verify the backend service is active.'
       } else {
         message = error.message || 'Something went wrong'
       }

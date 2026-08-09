@@ -5,6 +5,7 @@ import { useQuery } from '@tanstack/react-query'
 import { galleryService } from '../../services'
 import { useState } from 'react'
 import { useLanguage } from '../../context/LanguageContext'
+import { getImageUrl } from '../../utils/image'
 
 const Gallery = () => {
   const { language } = useLanguage()
@@ -86,7 +87,7 @@ const Gallery = () => {
                 whileHover={{ scale: 1.05 }}
               >
                 <img
-                  src={item.image}
+                  src={getImageUrl(item.image)}
                   alt={getTitle(item)}
                   className="w-full h-full object-cover transition-transform duration-300"
                 />
@@ -104,7 +105,7 @@ const Gallery = () => {
           {selectedImage && (
             <div className="relative">
               <img
-                src={selectedImage.image}
+                src={getImageUrl(selectedImage.image)}
                 alt={getTitle(selectedImage)}
                 className="w-full h-full object-contain rounded-lg"
                 style={{ maxHeight: '80vh' }}

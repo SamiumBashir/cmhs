@@ -1,5 +1,6 @@
 import { motion } from 'framer-motion'
 import { FiUser } from 'react-icons/fi'
+import { getImageUrl } from '../../utils/image'
 
 const Avatar = ({
   src,
@@ -23,7 +24,7 @@ const Avatar = ({
   if (src) {
     return (
       <img
-        src={src}
+        src={getImageUrl(src)}
         alt={name || 'Avatar'}
         className={`rounded-full object-cover ${sizeClasses[size]} ${className}`}
       />

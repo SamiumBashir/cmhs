@@ -10,8 +10,9 @@ import xssClean from 'xss-clean'
 import hpp from 'hpp'
 import rateLimit from 'express-rate-limit'
 import dotenv from 'dotenv'
-import { connectRedis } from './config/redis.js'
+import { connectRedis, getRedis } from './config/redis.js'
 import connectDB from './config/database.js'
+import mongoose from 'mongoose'
 import errorHandler from './middleware/errorHandler.js'
 import notFound from './middleware/notFound.js'
 import authRoutes from './routes/authRoutes.js'
@@ -52,18 +53,28 @@ app.use(helmet({
       imgSrc: ["'self'", 'data:', 'https:', 'http:'],
       scriptSrc: ["'self'", "'unsafe-inline'"],
       styleSrc: ["'self'", "'unsafe-inline'"],
-      connectSrc: ["'self'", process.env.FRONTEND_URL || '*'],
+      connectSrc: ["'self'", process.env.FRONTEND_URL || '*', process.env.ADMIN_URL || '*'],
       frameSrc: ["'self'"]
     }
   }
 }))
+
+const allowedOrigins = [
+  process.env.FRONTEND_URL,
+  process.env.ADMIN_URL,
+  ...(process.env.ALLOWED_ORIGINS ? process.env.ALLOWED_ORIGINS.split(',') : [])
+].filter(Boolean)
+
 app.use(cors({
   origin: (origin, callback) => {
-    // Allow requests with no origin (like mobile apps or curl) or any localhost/127.0.0.1 origin
+    // Allow requests with no origin (mobile apps, curl, postman) or localhost in dev
     if (!origin || origin.includes('localhost') || origin.includes('127.0.0.1')) {
       return callback(null, true)
     }
-    return callback(null, true)
+    if (allowedOrigins.length === 0 || allowedOrigins.includes(origin)) {
+      return callback(null, true)
+    }
+    return callback(new Error('CORS not allowed for origin: ' + origin))
   },
   credentials: true
 }))
@@ -78,14 +89,25 @@ app.use(mongoSanitize())
 app.use(xssClean())
 app.use(hpp())
 
-const limiter = rateLimit({
+// Rate limiters
+const generalLimiter = rateLimit({
   windowMs: 15 * 60 * 1000,
-  max: 100,
+  max: 500,
   standardHeaders: true,
   legacyHeaders: false,
   message: { success: false, message: 'Too many requests, please try again later.' }
 })
-app.use('/api/', limiter)
+
+const loginLimiter = rateLimit({
+  windowMs: 15 * 60 * 1000,
+  max: 15,
+  standardHeaders: true,
+  legacyHeaders: false,
+  message: { success: false, message: 'Too many login attempts. Please try again after 15 minutes.' }
+})
+
+app.use('/api/auth/login', loginLimiter)
+app.use('/api/', generalLimiter)
 
 app.use('/api/auth', authRoutes)
 app.use('/api/students', studentRoutes)
@@ -114,7 +136,21 @@ app.use('/api/admin/users', adminRoutes)
 app.use('/api/audit-logs', auditLogRoutes)
 
 app.get('/api/health', (req, res) => {
-  res.json({ success: true, message: 'School Management API is running', timestamp: new Date().toISOString() })
+  const mongoStatus = mongoose.connection.readyState === 1 ? 'connected' : 'disconnected'
+  const redisClient = getRedis()
+  const redisStatus = (redisClient && redisClient.isOpen) ? 'connected' : 'disconnected'
+
+  res.json({
+    success: true,
+    status: 'ok',
+    message: 'School Management API is running',
+    timestamp: new Date().toISOString(),
+    uptime: Math.floor(process.uptime()),
+    services: {
+      mongodb: mongoStatus,
+      redis: redisStatus
+    }
+  })
 })
 
 app.use(notFound)

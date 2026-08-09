@@ -2,7 +2,7 @@ import bcrypt from 'bcryptjs'
 import Admin from '../models/Admin.js'
 import Teacher from '../models/Teacher.js'
 import Student from '../models/Student.js'
-import { generateToken, generateRefreshToken, verifyToken } from '../utils/jwt.js'
+import { generateToken, generateRefreshToken, verifyToken, verifyRefreshToken } from '../utils/jwt.js'
 
 const login = async (req, res, next) => {
   try {
@@ -87,11 +87,18 @@ const login = async (req, res, next) => {
       await user.save({ validateBeforeSave: false })
     }
 
+    const isProduction = process.env.NODE_ENV === 'production'
     res.cookie('token', token, {
       httpOnly: true,
-      secure: process.env.NODE_ENV === 'production',
+      secure: isProduction,
       maxAge: 7 * 24 * 60 * 60 * 1000,
-      sameSite: 'strict'
+      sameSite: isProduction ? 'none' : 'lax'
+    })
+    res.cookie('refreshToken', refreshToken, {
+      httpOnly: true,
+      secure: isProduction,
+      maxAge: 30 * 24 * 60 * 60 * 1000,
+      sameSite: isProduction ? 'none' : 'lax'
     })
 
     res.json({
@@ -196,21 +203,49 @@ const updateProfile = async (req, res, next) => {
 }
 
 const logout = async (req, res) => {
-  res.clearCookie('token')
+  const isProduction = process.env.NODE_ENV === 'production'
+  const cookieOpts = {
+    httpOnly: true,
+    secure: isProduction,
+    sameSite: isProduction ? 'none' : 'lax'
+  }
+  res.clearCookie('token', cookieOpts)
+  res.clearCookie('refreshToken', cookieOpts)
   res.json({ success: true, message: 'Logged out successfully' })
 }
 
-const refreshToken = async (req, res, next) => {
+const refreshToken = async (req, res) => {
   try {
-    const token = req.cookies?.token || req.headers.authorization?.split(' ')[1]
+    const token = req.body?.refreshToken || req.cookies?.refreshToken || req.cookies?.token || req.headers.authorization?.split(' ')[1]
     if (!token) {
-      return res.status(401).json({ success: false, message: 'No token provided' })
+      return res.status(401).json({ success: false, message: 'No refresh token provided' })
     }
-    const decoded = verifyToken(token)
+    let decoded
+    try {
+      decoded = verifyRefreshToken(token)
+    } catch {
+      decoded = verifyToken(token)
+    }
     const newToken = generateToken(decoded.id, decoded.role)
-    res.json({ success: true, data: { token: newToken } })
-  } catch (error) {
-    res.status(401).json({ success: false, message: 'Invalid or expired token' })
+    const newRefreshToken = generateRefreshToken(decoded.id, decoded.role)
+
+    const isProduction = process.env.NODE_ENV === 'production'
+    res.cookie('token', newToken, {
+      httpOnly: true,
+      secure: isProduction,
+      maxAge: 7 * 24 * 60 * 60 * 1000,
+      sameSite: isProduction ? 'none' : 'lax'
+    })
+
+    res.json({
+      success: true,
+      data: {
+        token: newToken,
+        refreshToken: newRefreshToken
+      }
+    })
+  } catch {
+    res.status(401).json({ success: false, message: 'Invalid or expired refresh token' })
   }
 }
 
