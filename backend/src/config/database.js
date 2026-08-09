@@ -179,7 +179,8 @@ const seedDefaultUsers = async () => {
 }
 
 const connectDB = async (retries = 5, delayMs = 3000) => {
-  const uri = process.env.MONGODB_URI || process.env.MONGO_URL || process.env.DATABASE_URL || 'mongodb://127.0.0.1:27017/school-management'
+  const rawUri = process.env.MONGODB_URI || process.env.MONGO_URL || process.env.DATABASE_URL || 'mongodb://127.0.0.1:27017/school-management'
+  const uri = String(rawUri).replace(/^["']|["']$/g, '').trim()
   for (let attempt = 1; attempt <= retries; attempt++) {
     try {
       const conn = await mongoose.connect(uri)
