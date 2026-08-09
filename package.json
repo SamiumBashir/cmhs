@@ -1,0 +1,12 @@
+{
+  "name": "chilahati-merchants-high-school-root",
+  "version": "1.0.0",
+  "private": true,
+  "scripts": {
+    "start": "cd backend && node src/server.js",
+    "build": "cd backend && npm run build"
+  },
+  "engines": {
+    "node": ">=18.0.0"
+  }
+}
