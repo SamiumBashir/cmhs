@@ -179,7 +179,7 @@ const seedDefaultUsers = async () => {
 }
 
 const connectDB = async (retries = 5, delayMs = 3000) => {
-  const uri = process.env.MONGODB_URI || 'mongodb://127.0.0.1:27017/school-management'
+  const uri = process.env.MONGODB_URI || process.env.MONGO_URL || process.env.DATABASE_URL || 'mongodb://127.0.0.1:27017/school-management'
   for (let attempt = 1; attempt <= retries; attempt++) {
     try {
       const conn = await mongoose.connect(uri)
@@ -195,8 +195,14 @@ const connectDB = async (retries = 5, delayMs = 3000) => {
       return conn
     } catch (error) {
       console.error(`MongoDB connection attempt ${attempt}/${retries} failed: ${error.message}`)
+      if (error.message.includes('bad auth') || error.message.includes('authentication failed')) {
+        console.error('\n❌ MONGODB AUTHENTICATION ERROR DETECTED:')
+        console.error('1. If your password contains special characters (@, #, $, %, :, /), URL-encode them (e.g. @ -> %40).')
+        console.error('2. Verify MONGODB_URI / MONGO_URL in Railway Variables contains the correct database username & password.')
+        console.error('3. If using MongoDB Atlas or Railway plugin, ensure authSource=admin is appended: .../school-management?authSource=admin\n')
+      }
       if (attempt === retries) {
-        console.error('Failed to connect to MongoDB after multiple attempts. Please ensure MongoDB is running.')
+        console.error('Failed to connect to MongoDB after multiple attempts. Please check your Railway/Atlas database credentials.')
         process.exit(1)
       }
       await new Promise(res => setTimeout(res, delayMs))
