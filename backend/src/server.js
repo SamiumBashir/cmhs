@@ -160,8 +160,6 @@ const PORT = process.env.PORT ? parseInt(String(process.env.PORT).replace(/^["']
 
 const startServer = async () => {
   try {
-    await connectDB()
-    await connectRedis()
     const server = app.listen(PORT, () => {
       console.log(`Server running on port ${PORT} in ${process.env.NODE_ENV || 'development'} mode`)
     })
@@ -174,6 +172,9 @@ const startServer = async () => {
         process.exit(1)
       }
     })
+
+    connectDB().catch((err) => console.error('MongoDB async connection error:', err.message))
+    connectRedis().catch((err) => console.error('Redis async connection error:', err.message))
   } catch (error) {
     console.error('Failed to start server:', error.message)
     process.exit(1)
