@@ -3,13 +3,14 @@ import axios from 'axios'
 const DEFAULT_RAILWAY_URL = 'https://cmhs-production.up.railway.app/api'
 
 const getApiBaseUrl = () => {
-  if (import.meta.env.VITE_API_URL && !import.meta.env.VITE_API_URL.startsWith('/')) {
-    return import.meta.env.VITE_API_URL
+  const envUrl = import.meta.env.VITE_API_URL
+  if (envUrl && typeof envUrl === 'string' && !envUrl.startsWith('/') && !envUrl.includes('localhost') && !envUrl.includes('127.0.0.1')) {
+    return envUrl
   }
   if (import.meta.env.PROD) {
     return DEFAULT_RAILWAY_URL
   }
-  return '/api'
+  return envUrl || '/api'
 }
 
 const API_BASE_URL = getApiBaseUrl()

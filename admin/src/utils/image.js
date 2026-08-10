@@ -7,7 +7,10 @@ export const getImageUrl = (url) => {
   }
 
   const DEFAULT_BACKEND_HOST = 'https://cmhs-production.up.railway.app'
-  const rawHost = import.meta.env.VITE_BACKEND_URL || import.meta.env.VITE_API_URL || (import.meta.env.PROD ? DEFAULT_BACKEND_HOST : '')
+  let rawHost = import.meta.env.VITE_BACKEND_URL || import.meta.env.VITE_API_URL || ''
+  if (import.meta.env.PROD && (!rawHost || rawHost.includes('localhost') || rawHost.includes('127.0.0.1'))) {
+    rawHost = DEFAULT_BACKEND_HOST
+  }
   const cleanHost = rawHost.replace(/\/api\/?$/, '')
 
   if (!cleanHost) return url
