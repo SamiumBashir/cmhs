@@ -6,7 +6,8 @@ export const getImageUrl = (url) => {
     return url
   }
 
-  const rawHost = import.meta.env.VITE_BACKEND_URL || import.meta.env.VITE_API_URL || ''
+  const DEFAULT_BACKEND_HOST = 'https://cmhs-production.up.railway.app'
+  const rawHost = import.meta.env.VITE_BACKEND_URL || import.meta.env.VITE_API_URL || (import.meta.env.PROD ? DEFAULT_BACKEND_HOST : '')
   const cleanHost = rawHost.replace(/\/api\/?$/, '')
 
   if (!cleanHost) return url
