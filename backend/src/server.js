@@ -1,20 +1,22 @@
 import express from 'express'
-import path from 'path'
 import cors from 'cors'
 import helmet from 'helmet'
-import compression from 'compression'
 import morgan from 'morgan'
+import compression from 'compression'
 import cookieParser from 'cookie-parser'
 import mongoSanitize from 'express-mongo-sanitize'
 import xssClean from 'xss-clean'
 import hpp from 'hpp'
 import rateLimit from 'express-rate-limit'
 import dotenv from 'dotenv'
-import { connectRedis, getRedis } from './config/redis.js'
-import connectDB from './config/database.js'
+import path from 'path'
 import mongoose from 'mongoose'
+
+import connectDB from './config/database.js'
+import { connectRedis, getRedis } from './config/redis.js'
 import errorHandler from './middleware/errorHandler.js'
 import notFound from './middleware/notFound.js'
+
 import authRoutes from './routes/authRoutes.js'
 import studentRoutes from './routes/studentRoutes.js'
 import teacherRoutes from './routes/teacherRoutes.js'
@@ -43,16 +45,40 @@ import auditLogRoutes from './routes/auditLogRoutes.js'
 
 dotenv.config()
 
+// Fail-fast environment validation
+const validateEnv = () => {
+  const isProduction = process.env.NODE_ENV === 'production'
+  const requiredInProduction = ['JWT_SECRET', 'REFRESH_TOKEN_SECRET', 'MONGODB_URI']
+  const missing = []
+
+  if (isProduction) {
+    for (const key of requiredInProduction) {
+      if (!process.env[key] || process.env[key].trim() === '') {
+        missing.push(key)
+      }
+    }
+
+    if (missing.length > 0) {
+      console.error(`❌ FATAL CONFIG ERROR: Missing required production environment variables: ${missing.join(', ')}`)
+      process.exit(1)
+    }
+  }
+}
+
+validateEnv()
+
 const app = express()
 
+// Security Headers with strict Content Security Policy
 app.use(helmet({
   crossOriginEmbedderPolicy: false,
   contentSecurityPolicy: {
     directives: {
       defaultSrc: ["'self'"],
-      imgSrc: ["'self'", 'data:', 'https:', 'http:'],
+      imgSrc: ["'self'", 'data:', 'https:', 'http:', 'res.cloudinary.com'],
       scriptSrc: ["'self'", "'unsafe-inline'"],
-      styleSrc: ["'self'", "'unsafe-inline'"],
+      styleSrc: ["'self'", "'unsafe-inline'", 'fonts.googleapis.com'],
+      fontSrc: ["'self'", 'fonts.gstatic.com', 'data:'],
       connectSrc: ["'self'", process.env.FRONTEND_URL || '*', process.env.ADMIN_URL || '*'],
       frameSrc: ["'self'"]
     }
@@ -61,45 +87,53 @@ app.use(helmet({
 
 app.set('trust proxy', 1)
 
-const allowedOrigins = [
-  process.env.FRONTEND_URL,
-  process.env.ADMIN_URL,
-  ...(process.env.ALLOWED_ORIGINS ? process.env.ALLOWED_ORIGINS.split(',') : [])
-].map(s => s?.trim()).filter(Boolean)
+// Strict CORS Configuration (Phase 2)
+const getNormalizedAllowedOrigins = () => {
+  const list = [
+    process.env.FRONTEND_URL,
+    process.env.ADMIN_URL,
+    ...(process.env.ALLOWED_ORIGINS ? process.env.ALLOWED_ORIGINS.split(',') : [])
+  ]
+    .map(s => s?.trim().replace(/\/$/, ''))
+    .filter(Boolean)
+
+  return new Set(list)
+}
+
+const allowedOriginsSet = getNormalizedAllowedOrigins()
 
 app.use(cors({
   origin: (origin, callback) => {
-    // Allow requests with no origin (e.g. mobile apps, curl, postman)
+    // Allow non-browser requests (e.g. mobile apps, server-to-server, curl)
     if (!origin) return callback(null, true)
 
-    // Allow local development
-    if (origin.includes('localhost') || origin.includes('127.0.0.1')) {
+    const cleanOrigin = origin.replace(/\/$/, '')
+
+    // Development localhost check
+    if (process.env.NODE_ENV !== 'production') {
+      if (
+        cleanOrigin.includes('localhost') ||
+        cleanOrigin.includes('127.0.0.1')
+      ) {
+        return callback(null, true)
+      }
+    }
+
+    // Explicitly allowed production domains
+    if (allowedOriginsSet.has(cleanOrigin)) {
       return callback(null, true)
     }
 
-    // Allow any Vercel domain (*.vercel.app and preview domains)
-    if (origin.endsWith('.vercel.app') || origin.includes('vercel.app')) {
-      return callback(null, true)
-    }
-
-    // Allow Railway, Render, Netlify deployments
-    if (origin.endsWith('.up.railway.app') || origin.endsWith('.onrender.com') || origin.endsWith('.netlify.app')) {
-      return callback(null, true)
-    }
-
-    // Check allowedOrigins list
-    if (allowedOrigins.length === 0 || allowedOrigins.some(allowed => allowed === origin || origin.startsWith(allowed) || allowed.startsWith(origin))) {
-      return callback(null, true)
-    }
-
-    return callback(null, true)
+    // Reject all unauthorized origins
+    return callback(new Error('CORS policy: Access from this origin is not permitted.'), false)
   },
   credentials: true,
   methods: ['GET', 'POST', 'PUT', 'DELETE', 'OPTIONS', 'PATCH'],
   allowedHeaders: ['Content-Type', 'Authorization', 'X-Requested-With', 'Accept', 'Origin']
 }))
+
 app.use(compression())
-app.use(morgan('combined'))
+app.use(morgan(process.env.NODE_ENV === 'production' ? 'combined' : 'dev'))
 app.use(express.json({ limit: '10mb' }))
 app.use(express.urlencoded({ extended: true, limit: '10mb' }))
 app.use('/uploads', express.static(path.join(process.cwd(), 'uploads')))
@@ -109,14 +143,18 @@ app.use(mongoSanitize())
 app.use(xssClean())
 app.use(hpp())
 
-// Ensure MongoDB is connected for serverless environments (e.g. Vercel)
-app.use(async (req, res, next) => {
+// Database Connection Middleware: Return 503 if database is disconnected
+app.use((req, res, next) => {
+  if (req.path === '/api/health' || req.path === '/api/ready' || req.path === '/') {
+    return next()
+  }
+
   if (mongoose.connection.readyState !== 1) {
-    try {
-      await connectDB()
-    } catch (err) {
-      console.warn('MongoDB connection in request middleware:', err.message)
-    }
+    return res.status(503).json({
+      success: false,
+      message: 'Service Temporarily Unavailable: Database connection is offline. Please try again shortly.',
+      code: 'DATABASE_UNAVAILABLE'
+    })
   }
   next()
 })
@@ -130,19 +168,52 @@ const generalLimiter = rateLimit({
   message: { success: false, message: 'Too many requests, please try again later.' }
 })
 
-const loginLimiter = rateLimit({
+const authLimiter = rateLimit({
   windowMs: 15 * 60 * 1000,
-  max: 60,
+  max: 30, // 30 login attempts per 15 minutes per IP
   standardHeaders: true,
   legacyHeaders: false,
-  skipSuccessfulRequests: true,
-  message: { success: false, message: 'Too many login attempts. Please try again after 15 minutes.' }
+  message: { success: false, message: 'Too many authentication attempts. Please try again in 15 minutes.' }
 })
 
-app.use('/api/auth/login', loginLimiter)
+app.use('/api/auth/login', authLimiter)
+app.use('/api/auth/register', authLimiter)
 app.use('/api/', generalLimiter)
 
+// Health and Readiness Checks (Phase 19)
+app.get(['/', '/api', '/api/health'], (req, res) => {
+  res.json({
+    success: true,
+    status: 'ok',
+    service: 'Chilahati Merchants High School API',
+    timestamp: new Date().toISOString(),
+    uptime: Math.floor(process.uptime())
+  })
+})
 
+app.get('/api/ready', (req, res) => {
+  const isDbConnected = mongoose.connection.readyState === 1
+  const redisClient = getRedis()
+  const isRedisConnected = Boolean(redisClient && redisClient.isOpen)
+
+  if (!isDbConnected) {
+    return res.status(503).json({
+      success: false,
+      status: 'not_ready',
+      database: 'disconnected',
+      message: 'Database is not ready'
+    })
+  }
+
+  return res.json({
+    success: true,
+    status: 'ready',
+    database: 'connected',
+    redis: isRedisConnected ? 'connected' : 'disabled'
+  })
+})
+
+// API Routes Mount
 app.use('/api/auth', authRoutes)
 app.use('/api/students', studentRoutes)
 app.use('/api/teachers', teacherRoutes)
@@ -169,24 +240,6 @@ app.use('/api/downloads', downloadRoutes)
 app.use('/api/admin/users', adminRoutes)
 app.use('/api/audit-logs', auditLogRoutes)
 
-app.get(['/', '/api', '/api/health'], (req, res) => {
-  const mongoStatus = mongoose.connection.readyState === 1 ? 'connected' : 'disconnected'
-  const redisClient = getRedis()
-  const redisStatus = (redisClient && redisClient.isOpen) ? 'connected' : 'disconnected'
-
-  res.json({
-    success: true,
-    status: 'ok',
-    message: 'Chilahati Merchants High School API is running',
-    timestamp: new Date().toISOString(),
-    uptime: Math.floor(process.uptime()),
-    services: {
-      mongodb: mongoStatus,
-      redis: redisStatus
-    }
-  })
-})
-
 app.use(notFound)
 app.use(errorHandler)
 
@@ -194,23 +247,14 @@ const PORT = process.env.PORT ? parseInt(String(process.env.PORT).replace(/^["']
 
 const startServer = async () => {
   try {
-    const server = app.listen(PORT, () => {
-      console.log(`Server running on port ${PORT} in ${process.env.NODE_ENV || 'development'} mode`)
-    })
+    await connectDB()
+    await connectRedis()
 
-    server.on('error', (error) => {
-      if (error.code === 'EADDRINUSE') {
-        console.error(`\n❌ Error: Port ${PORT} is already in use (EADDRINUSE).`)
-        console.error(`👉 If Docker container 'school-backend' is running, stop it with: docker stop school-backend`)
-        console.error(`👉 Or change PORT in backend/.env to another port (e.g. PORT=5001).\n`)
-        process.exit(1)
-      }
+    app.listen(PORT, '0.0.0.0', () => {
+      console.log(`🚀 CMHS Server running in ${process.env.NODE_ENV || 'development'} mode on port ${PORT}`)
     })
-
-    connectDB().catch((err) => console.error('MongoDB async connection error:', err.message))
-    connectRedis().catch((err) => console.error('Redis async connection error:', err.message))
   } catch (error) {
-    console.error('Failed to start server:', error.message)
+    console.error('❌ Server startup failure:', error.message)
     process.exit(1)
   }
 }

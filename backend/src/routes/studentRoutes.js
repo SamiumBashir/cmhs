@@ -16,10 +16,10 @@ const studentValidation = [
   body('status').optional().isIn(['active', 'inactive', 'graduated'])
 ]
 
-router.get('/', auth, studentController.getAll)
+router.get('/', auth(['super_admin', 'admin', 'teacher']), studentController.getAll)
 router.get('/:id', auth, studentController.getOne)
-router.post('/', auth, studentValidation, validate, studentController.create)
-router.put('/:id', auth, studentController.update)
-router.delete('/:id', auth, studentController.remove)
+router.post('/', auth(['super_admin', 'admin', 'teacher']), studentValidation, validate, studentController.create)
+router.put('/:id', auth(['super_admin', 'admin', 'teacher']), studentController.update)
+router.delete('/:id', auth(['super_admin', 'admin']), studentController.remove)
 
 export default router

@@ -13,11 +13,13 @@ const teacherValidation = [
   body('status').optional().isIn(['active', 'inactive'])
 ]
 
-router.get('/', auth, teacherController.getAll)
-router.get('/:id', auth, teacherController.getOne)
-router.post('/', auth, teacherValidation, validate, teacherController.create)
-router.put('/:id', auth, teacherController.update)
-router.delete('/:id', auth, teacherController.remove)
+// Public endpoints to view teachers list
+router.get('/', teacherController.getAll)
+router.get('/:id', teacherController.getOne)
+
+// Administrative mutations restricted to super_admin and admin
+router.post('/', auth(['super_admin', 'admin']), teacherValidation, validate, teacherController.create)
+router.put('/:id', auth(['super_admin', 'admin']), teacherController.update)
+router.delete('/:id', auth(['super_admin', 'admin']), teacherController.remove)
 
 export default router
-

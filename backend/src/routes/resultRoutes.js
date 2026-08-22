@@ -7,19 +7,19 @@ import { resultController } from '../controllers/resultController.js'
 const router = express.Router()
 
 const resultValidation = [
-  body('studentId').notEmpty().withMessage('Student ID is required'),
-  body('class').notEmpty().withMessage('Class is required'),
-  body('exam').notEmpty().withMessage('Exam is required'),
+  body('student').notEmpty().withMessage('Student ID is required'),
+  body('examName').notEmpty().withMessage('Exam name is required'),
   body('subject').notEmpty().withMessage('Subject is required'),
-  body('marksObtained').notEmpty().withMessage('Marks obtained is required')
+  body('marksObtained').isNumeric().withMessage('Marks obtained must be numeric'),
+  body('fullMarks').isNumeric().withMessage('Full marks must be numeric')
 ]
 
-router.get('/', auth, resultController.getAll)
-router.get('/student/:studentId', auth, resultController.getByStudent)
-router.get('/:id', auth, resultController.getOne)
-router.post('/', auth, resultValidation, validate, resultController.create)
-router.put('/:id', auth, resultController.update)
-router.delete('/:id', auth, resultController.remove)
+router.get('/', resultController.getAll)
+router.get('/student/:studentId', resultController.getByStudent)
+router.get('/:id', resultController.getOne)
+
+router.post('/', auth(['super_admin', 'admin', 'teacher']), resultValidation, validate, resultController.create)
+router.put('/:id', auth(['super_admin', 'admin', 'teacher']), resultController.update)
+router.delete('/:id', auth(['super_admin', 'admin']), resultController.remove)
 
 export default router
-

@@ -6,16 +6,16 @@ const connectRedis = async () => {
   const rawUrl = process.env.REDIS_URL || process.env.REDIS_PRIVATE_URL || process.env.REDISURL || ''
   const url = String(rawUrl).replace(/^["']|["']$/g, '').trim()
 
-  if (!url && process.env.NODE_ENV === 'production') {
-    console.log('ℹ️ No REDIS_URL provided in production. Redis caching is skipped.')
+  if (!url) {
+    if (process.env.NODE_ENV === 'production') {
+      console.log('ℹ️ No REDIS_URL provided. Redis caching is disabled.')
+    }
     return null
   }
 
-  const finalUrl = url || 'redis://127.0.0.1:6379'
-
   try {
     redisClient = createClient({
-      url: finalUrl,
+      url,
       socket: {
         reconnectStrategy: (retries) => {
           if (retries > 3) {
@@ -28,11 +28,8 @@ const connectRedis = async () => {
     })
 
     redisClient.on('error', (err) => {
-      if (err.code === 'ECONNREFUSED') {
-        console.warn('⚠️ Cannot connect to Redis server:', finalUrl)
-      } else {
-        console.error('Redis Client Error:', err.message)
-      }
+      // Redact any credential info from error logs
+      console.warn('⚠️ Redis Client Warning:', err.message || 'Connection error')
     })
 
     redisClient.on('connect', () => console.log('✅ Redis Connected'))
@@ -40,7 +37,7 @@ const connectRedis = async () => {
     await redisClient.connect()
     return redisClient
   } catch (error) {
-    console.warn('⚠️ Redis connection skipped:', error.message)
+    console.warn('⚠️ Redis connection skipped:', error.message || 'Unavailable')
     if (redisClient) {
       try { await redisClient.disconnect() } catch (e) {}
     }

@@ -4,7 +4,9 @@ import { auditLogController } from '../controllers/auditLogController.js'
 
 const router = express.Router()
 
-router.get('/', auth(['super_admin', 'admin']), auditLogController.getAll)
-router.get('/:id', auth(['super_admin', 'admin']), auditLogController.getOne)
+router.use(auth(['super_admin']))
+
+router.get('/', auditLogController.getAll)
+router.get('/:id', auditLogController.getOne)
 
 export default router

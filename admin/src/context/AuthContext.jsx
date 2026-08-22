@@ -16,31 +16,6 @@ export const AuthProvider = ({ children }) => {
   const [isAuthenticated, setIsAuthenticated] = useState(false)
 
   useEffect(() => {
-    // Check URL parameters for cross-origin SSO from main website
-    const urlParams = new URLSearchParams(window.location.search)
-    const queryToken = urlParams.get('token')
-    const queryUser = urlParams.get('user')
-
-    if (queryToken) {
-      localStorage.setItem('token', queryToken)
-      setToken(queryToken)
-      api.defaults.headers.common.Authorization = `Bearer ${queryToken}`
-
-      if (queryUser) {
-        try {
-          const parsedUser = JSON.parse(decodeURIComponent(queryUser))
-          localStorage.setItem('user', JSON.stringify(parsedUser))
-          setUser(parsedUser)
-        } catch {
-          // ignore parsing error
-        }
-      }
-      setIsAuthenticated(true)
-      setLoading(false)
-      window.history.replaceState({}, document.title, window.location.pathname)
-      return
-    }
-
     const storedToken = localStorage.getItem('token')
     const storedUser = localStorage.getItem('user')
     if (storedToken && storedUser) {
@@ -64,9 +39,10 @@ export const AuthProvider = ({ children }) => {
       password,
       role
     })
-    const { token: newToken, user: userData } = response.data.data
+    const { token: newToken, refreshToken: newRefreshToken, user: userData } = response.data.data
 
     localStorage.setItem('token', newToken)
+    if (newRefreshToken) localStorage.setItem('refreshToken', newRefreshToken)
     localStorage.setItem('user', JSON.stringify(userData))
     api.defaults.headers.common.Authorization = `Bearer ${newToken}`
 
@@ -76,8 +52,12 @@ export const AuthProvider = ({ children }) => {
     return { token: newToken, user: userData }
   }
 
-  const logout = useCallback(() => {
+  const logout = useCallback(async () => {
+    try {
+      await api.post('/auth/logout')
+    } catch {}
     localStorage.removeItem('token')
+    localStorage.removeItem('refreshToken')
     localStorage.removeItem('user')
     delete api.defaults.headers.common.Authorization
     setToken(null)
@@ -87,9 +67,16 @@ export const AuthProvider = ({ children }) => {
 
   const refreshToken = useCallback(async () => {
     try {
-      const response = await api.post('/auth/refresh')
-      const { token: newToken } = response.data.data
+      const storedRefreshToken = localStorage.getItem('refreshToken')
+      const response = await api.post('/auth/refresh', { refreshToken: storedRefreshToken })
+      const { token: newToken, refreshToken: newRefreshToken, user: userData } = response.data.data
+
       localStorage.setItem('token', newToken)
+      if (newRefreshToken) localStorage.setItem('refreshToken', newRefreshToken)
+      if (userData) {
+        localStorage.setItem('user', JSON.stringify(userData))
+        setUser(userData)
+      }
       setToken(newToken)
       api.defaults.headers.common.Authorization = `Bearer ${newToken}`
       return newToken

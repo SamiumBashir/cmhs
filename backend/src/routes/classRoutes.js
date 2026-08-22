@@ -1,18 +1,14 @@
 import express from 'express'
-import { classController } from '../controllers/classController.js'
 import auth from '../middleware/auth.js'
+import { classController } from '../controllers/classController.js'
 
 const router = express.Router()
 
-router.use(auth())
+router.get('/', classController.getAll)
+router.get('/:id', classController.getOne)
 
-router.route('/')
-  .get(classController.getAll)
-  .post(classController.create)
-
-router.route('/:id')
-  .get(classController.getOne)
-  .put(classController.update)
-  .delete(classController.remove)
+router.post('/', auth(['super_admin', 'admin']), classController.create)
+router.put('/:id', auth(['super_admin', 'admin']), classController.update)
+router.delete('/:id', auth(['super_admin', 'admin']), classController.remove)
 
 export default router

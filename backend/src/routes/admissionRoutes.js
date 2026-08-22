@@ -7,17 +7,19 @@ import { admissionController } from '../controllers/admissionController.js'
 const router = express.Router()
 
 const admissionValidation = [
-  body('studentName.bn').notEmpty().withMessage('Bengali student name is required'),
-  body('studentName.en').notEmpty().withMessage('English student name is required'),
+  body('studentName.bn').notEmpty().withMessage('Bengali name is required'),
+  body('studentName.en').notEmpty().withMessage('English name is required'),
   body('class').notEmpty().withMessage('Class is required'),
-  body('status').optional().isIn(['pending', 'approved', 'rejected'])
+  body('phone').notEmpty().withMessage('Phone number is required')
 ]
 
-router.get('/', auth, admissionController.getAll)
-router.get('/:id', auth, admissionController.getOne)
+// Public endpoint for prospective students/parents to submit applications
 router.post('/', admissionValidation, validate, admissionController.create)
-router.put('/:id', auth, admissionController.update)
-router.delete('/:id', auth, admissionController.remove)
+
+// Administrative management endpoints
+router.get('/', auth(['super_admin', 'admin']), admissionController.getAll)
+router.get('/:id', auth(['super_admin', 'admin']), admissionController.getOne)
+router.put('/:id', auth(['super_admin', 'admin']), admissionController.update)
+router.delete('/:id', auth(['super_admin', 'admin']), admissionController.remove)
 
 export default router
-

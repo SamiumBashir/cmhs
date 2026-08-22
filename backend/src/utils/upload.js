@@ -40,38 +40,56 @@ export const isCloudinaryConfigured = () => {
   )
 }
 
+const ALLOWED_MIME_TYPES = new Set([
+  'image/jpeg',
+  'image/png',
+  'image/webp',
+  'image/gif',
+  'image/svg+xml',
+  'application/pdf',
+  'application/msword',
+  'application/vnd.openxmlformats-officedocument.wordprocessingml.document',
+  'application/vnd.ms-excel',
+  'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet'
+])
+
+const ALLOWED_EXTENSIONS = new Set([
+  '.jpg', '.jpeg', '.png', '.webp', '.gif', '.svg',
+  '.pdf', '.doc', '.docx', '.xls', '.xlsx'
+])
+
 const storage = multer.diskStorage({
   destination: (req, file, cb) => {
     cb(null, uploadsDir)
   },
   filename: (req, file, cb) => {
+    const ext = path.extname(file.originalname).toLowerCase() || '.jpg'
+    const safeBaseName = path.basename(file.originalname, ext).replace(/[^a-zA-Z0-9_-]/g, '_').slice(0, 50)
     const uniqueSuffix = Date.now() + '-' + Math.round(Math.random() * 1e9)
-    const ext = path.extname(file.originalname) || '.jpg'
-    cb(null, `${file.fieldname}-${uniqueSuffix}${ext}`)
+    cb(null, `${safeBaseName}-${uniqueSuffix}${ext}`)
   }
 })
 
 export const upload = multer({
   storage,
-  limits: { fileSize: 15 * 1024 * 1024 }, // 15MB max limit
+  limits: {
+    fileSize: 15 * 1024 * 1024, // 15MB max
+    files: 5
+  },
   fileFilter: (req, file, cb) => {
-    if (
-      file.mimetype.startsWith('image/') ||
-      file.mimetype.startsWith('application/pdf') ||
-      file.mimetype.includes('document') ||
-      file.mimetype.includes('sheet')
-    ) {
-      cb(null, true)
-    } else {
-      cb(new Error('Only images, PDFs, and document files are allowed!'), false)
+    const ext = path.extname(file.originalname).toLowerCase()
+    const mime = (file.mimetype || '').toLowerCase()
+
+    if (!ALLOWED_EXTENSIONS.has(ext) || !ALLOWED_MIME_TYPES.has(mime)) {
+      return cb(new Error('Invalid file type. Only standard images (JPG, PNG, WebP, SVG) and documents (PDF, Word, Excel) are permitted.'), false)
     }
+
+    cb(null, true)
   }
 })
 
 /**
  * Upload a file to Cloudinary with fallback to local static storage
- * @param {Object} file - Multer file object
- * @param {Object} options - Upload options (folder, tags, etc.)
  */
 export const uploadFile = async (file, options = {}) => {
   if (!file) return null
@@ -92,13 +110,9 @@ export const uploadFile = async (file, options = {}) => {
 
       const result = await cloudinary.uploader.upload(file.path, uploadParams)
 
-      // Remove local temporary file after successful Cloudinary upload
+      // Clean up local temp file
       if (fs.existsSync(file.path)) {
-        try {
-          fs.unlinkSync(file.path)
-        } catch {
-          // ignore cleanup error
-        }
+        try { fs.unlinkSync(file.path) } catch {}
       }
 
       return {
@@ -115,7 +129,7 @@ export const uploadFile = async (file, options = {}) => {
     }
   }
 
-  // Fallback to local storage URL
+  // Fallback to local storage
   const filename = path.basename(file.path)
   return {
     url: `/uploads/${filename}`,
@@ -138,7 +152,7 @@ export const uploadDirectToCloudinary = async (source, options = {}) => {
   const targetFolder = options.folder || 'school-management/cms'
 
   if (!isCloudinaryConfigured()) {
-    throw new Error('Cloudinary is not configured on the server. Please check your CLOUDINARY_* environment variables.')
+    throw new Error('Cloudinary is not configured on the server.')
   }
 
   const result = await cloudinary.uploader.upload(source, {
@@ -245,12 +259,4 @@ export const getCloudinaryStatus = async () => {
   }
 }
 
-export const handleUpload = (req, res, next) => {
-  if (!req.file) {
-    return res.status(400).json({ success: false, message: 'No file uploaded' })
-  }
-  next()
-}
-
 export { cloudinary }
-

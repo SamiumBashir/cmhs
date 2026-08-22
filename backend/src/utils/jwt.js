@@ -1,23 +1,105 @@
 import jwt from 'jsonwebtoken'
+import crypto from 'crypto'
 
-const generateToken = (id, role) => {
-  return jwt.sign({ id, role }, process.env.JWT_SECRET || 'chilahati-super-secret-jwt-key-2024', {
-    expiresIn: process.env.JWT_EXPIRY || '7d'
+/**
+ * Get JWT Access Secret
+ */
+const getJwtSecret = () => {
+  const secret = process.env.JWT_SECRET
+  if (!secret) {
+    if (process.env.NODE_ENV === 'production') {
+      throw new Error('FATAL: JWT_SECRET environment variable is not defined in production.')
+    }
+    return 'cmhs-dev-jwt-access-secret-minimum-32-chars!'
+  }
+  return secret
+}
+
+/**
+ * Get JWT Refresh Secret
+ */
+const getRefreshSecret = () => {
+  const secret = process.env.REFRESH_TOKEN_SECRET
+  if (!secret) {
+    if (process.env.NODE_ENV === 'production') {
+      throw new Error('FATAL: REFRESH_TOKEN_SECRET environment variable is not defined in production.')
+    }
+    return 'cmhs-dev-jwt-refresh-secret-minimum-32-chars!'
+  }
+  return secret
+}
+
+/**
+ * Generate standard access token
+ * @param {string} id - User ID
+ * @param {string} role - User role
+ * @param {string} [jti] - Optional session ID
+ */
+export const generateToken = (id, role, jti = null) => {
+  const secret = getJwtSecret()
+  const payload = {
+    sub: String(id),
+    id: String(id),
+    role: role || 'student',
+    type: 'access',
+    jti: jti || crypto.randomUUID()
+  }
+
+  return jwt.sign(payload, secret, {
+    expiresIn: process.env.JWT_EXPIRY || '30m'
   })
 }
 
-const generateRefreshToken = (id, role) => {
-  return jwt.sign({ id, role }, process.env.REFRESH_TOKEN_SECRET || 'chilahati-refresh-token-secret', {
-    expiresIn: process.env.REFRESH_TOKEN_EXPIRY || '30d'
+/**
+ * Generate standard refresh token
+ * @param {string} id - User ID
+ * @param {string} role - User role
+ * @param {string} [jti] - Optional session ID
+ */
+export const generateRefreshToken = (id, role, jti = null) => {
+  const secret = getRefreshSecret()
+  const payload = {
+    sub: String(id),
+    id: String(id),
+    role: role || 'student',
+    type: 'refresh',
+    jti: jti || crypto.randomUUID()
+  }
+
+  return jwt.sign(payload, secret, {
+    expiresIn: process.env.REFRESH_TOKEN_EXPIRY || '14d'
   })
 }
 
-const verifyToken = (token) => {
-  return jwt.verify(token, process.env.JWT_SECRET || 'chilahati-super-secret-jwt-key-2024')
+/**
+ * Verify Access Token
+ * @param {string} token
+ */
+export const verifyToken = (token) => {
+  const secret = getJwtSecret()
+  const decoded = jwt.verify(token, secret)
+  if (decoded.type && decoded.type !== 'access') {
+    throw new Error('Invalid token type: expected access token')
+  }
+  return decoded
 }
 
-const verifyRefreshToken = (token) => {
-  return jwt.verify(token, process.env.REFRESH_TOKEN_SECRET || 'chilahati-refresh-token-secret')
+/**
+ * Verify Refresh Token
+ * @param {string} token
+ */
+export const verifyRefreshToken = (token) => {
+  const secret = getRefreshSecret()
+  const decoded = jwt.verify(token, secret)
+  if (decoded.type && decoded.type !== 'refresh') {
+    throw new Error('Invalid token type: expected refresh token')
+  }
+  return decoded
 }
 
-export { generateToken, generateRefreshToken, verifyToken, verifyRefreshToken }
+export default {
+  generateToken,
+  generateRefreshToken,
+  verifyToken,
+  verifyRefreshToken
+}

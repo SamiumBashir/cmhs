@@ -6,8 +6,9 @@ const router = express.Router()
 
 router.get('/', faqController.getAll)
 router.get('/:id', faqController.getOne)
-router.post('/', auth, faqController.create)
-router.put('/:id', auth, faqController.update)
-router.delete('/:id', auth, faqController.remove)
+
+router.post('/', auth(['super_admin', 'admin', 'editor']), faqController.create)
+router.put('/:id', auth(['super_admin', 'admin', 'editor']), faqController.update)
+router.delete('/:id', auth(['super_admin', 'admin']), faqController.remove)
 
 export default router

@@ -4,10 +4,13 @@ import { adminUserController } from '../controllers/adminUserController.js'
 
 const router = express.Router()
 
-router.get('/', auth, adminUserController.getAll)
-router.get('/:id', auth, adminUserController.getOne)
-router.post('/', auth, adminUserController.create)
-router.put('/:id', auth, adminUserController.update)
-router.delete('/:id', auth, adminUserController.remove)
+// All administrative user management routes require super_admin or admin
+router.use(auth(['super_admin', 'admin']))
+
+router.get('/', adminUserController.getAll)
+router.get('/:id', adminUserController.getOne)
+router.post('/', adminUserController.create)
+router.put('/:id', adminUserController.update)
+router.delete('/:id', auth(['super_admin']), adminUserController.remove)
 
 export default router

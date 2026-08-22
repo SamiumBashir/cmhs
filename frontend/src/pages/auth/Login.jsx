@@ -36,8 +36,7 @@ const Login = () => {
 
       if (userRole === 'super_admin' || userRole === 'admin') {
         const adminUrl = import.meta.env.VITE_ADMIN_URL || (window.location.hostname.includes('vercel.app') ? 'https://cmhs-admin-five.vercel.app' : 'http://localhost:5174')
-        const encodedUser = encodeURIComponent(JSON.stringify(result?.user || {}))
-        window.location.href = `${adminUrl}?token=${result?.token || ''}&user=${encodedUser}`
+        window.location.href = adminUrl
       } else if (location.state?.from?.pathname) {
         navigate(location.state.from.pathname, { replace: true })
       } else if (userRole === 'teacher' || userRole === 'editor' || userRole === 'moderator') {
