@@ -16,10 +16,10 @@ const getApiBaseUrl = () => {
     return 'http://localhost:5000/api'
   }
 
-  // Production fallback: If no env variable is specified, use Railway URL or relative /api
-  const defaultUrl = 'https://cmhs-production.up.railway.app/api'
-  return defaultUrl
+  // Production: always use Railway directly (Vercel static can't proxy POST requests)
+  return 'https://cmhs-production.up.railway.app/api'
 }
+
 
 const API_BASE_URL = getApiBaseUrl()
 

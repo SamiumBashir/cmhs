@@ -1,13 +1,8 @@
 {
   "rewrites": [
     {
-      "source": "/api/:match*",
-      "destination": "https://cmhs-production.up.railway.app/api/:match*"
-    },
-    {
-      "source": "/((?!api/).*)",
+      "source": "/((?!.*\\.).*)",
       "destination": "/index.html"
     }
   ]
 }
-
