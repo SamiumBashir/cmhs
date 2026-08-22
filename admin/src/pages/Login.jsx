@@ -114,12 +114,11 @@ const Login = () => {
       </form>
 
       <div className="mt-6 pt-4 border-t border-white/10 text-center">
-        <p className="text-xs text-white/70 mb-2">Are you a Student or Teacher?</p>
         <a
-          href={`${frontendUrl}/login`}
-          className="inline-flex items-center gap-1 text-xs font-medium text-white hover:text-white/90 underline"
+          href={frontendUrl}
+          className="inline-flex items-center gap-1 text-xs font-medium text-white/80 hover:text-white transition-colors"
         >
-          Go to Student / Teacher Login Portal <FiExternalLink size={12} />
+          ← Return to Main School Website
         </a>
       </div>
     </div>

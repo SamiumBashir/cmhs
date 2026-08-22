@@ -1,11 +1,6 @@
-import React, { Suspense, lazy } from 'react'
-import { Routes, Route, useLocation } from 'react-router-dom'
-import { useEffect } from 'react'
+import React, { Suspense, lazy, useEffect } from 'react'
+import { Routes, Route, useLocation, Navigate } from 'react-router-dom'
 import PublicLayout from './components/layout/PublicLayout'
-import StudentLayout from './components/layout/StudentLayout'
-import TeacherLayout from './components/layout/TeacherLayout'
-import AuthLayout from './components/layout/AuthLayout'
-import RequireAuth from './components/layout/RequireAuth'
 import LoadingSpinner from './components/ui/LoadingSpinner'
 
 const Home = lazy(() => import('./pages/public/Home'))
@@ -23,28 +18,9 @@ const FAQ = lazy(() => import('./pages/public/FAQ'))
 const Downloads = lazy(() => import('./pages/public/Downloads'))
 const Facilities = lazy(() => import('./pages/public/Facilities'))
 const PrincipalMessage = lazy(() => import('./pages/public/PrincipalMessage'))
-
-const Login = lazy(() => import('./pages/auth/Login'))
-
-const StudentDashboard = lazy(() => import('./pages/student/Dashboard'))
-const StudentProfile = lazy(() => import('./pages/student/Profile'))
-const StudentRoutine = lazy(() => import('./pages/student/Routine'))
-const StudentAttendance = lazy(() => import('./pages/student/Attendance'))
-const StudentResults = lazy(() => import('./pages/student/Results'))
-const StudentFees = lazy(() => import('./pages/student/Fees'))
-const StudentNotices = lazy(() => import('./pages/student/Notices'))
-const StudentDownloads = lazy(() => import('./pages/student/Downloads'))
-
-const TeacherDashboard = lazy(() => import('./pages/teacher/Dashboard'))
-const TeacherClasses = lazy(() => import('./pages/teacher/MyClasses'))
-const TeacherRoutine = lazy(() => import('./pages/teacher/Routine'))
-const TeacherAttendance = lazy(() => import('./pages/teacher/Attendance'))
-const TeacherStudents = lazy(() => import('./pages/teacher/Students'))
-const TeacherResults = lazy(() => import('./pages/teacher/Results'))
-const TeacherNotices = lazy(() => import('./pages/teacher/Notices'))
-
 const NotFound = lazy(() => import('./pages/NotFound'))
 
+// Direct Redirect to Dedicated Admin Panel
 const AdminRedirect = () => {
   useEffect(() => {
     const adminUrl = import.meta.env.VITE_ADMIN_URL || (window.location.hostname.includes('vercel.app') ? 'https://cmhs-admin-five.vercel.app' : 'http://localhost:5174')
@@ -57,43 +33,6 @@ const AdminRedirect = () => {
     </div>
   )
 }
-
-const AdminPortalPage = () => {
-  const adminUrl = import.meta.env.VITE_ADMIN_URL
-
-  return (
-    <div className="flex items-center justify-center min-h-screen bg-gradient-to-br from-primary/10 to-secondary/10">
-      <div className="bg-white rounded-2xl shadow-xl p-8 max-w-md w-full mx-4 text-center">
-        <div className="w-16 h-16 bg-primary/10 rounded-2xl flex items-center justify-center mx-auto mb-4">
-          <span className="text-2xl">🏫</span>
-        </div>
-        <h1 className="text-2xl font-bold text-gray-900 mb-2">Admin Panel</h1>
-        <p className="text-gray-600 mb-6">You are logged in as Admin. The Admin Panel is a separate application.</p>
-        <div className="space-y-3">
-          {adminUrl ? (
-            <a
-              href={adminUrl}
-              className="block w-full py-3 px-4 bg-primary text-white rounded-xl font-semibold hover:bg-primary/90 transition-colors"
-            >
-              Open Admin Panel →
-            </a>
-          ) : (
-            <div className="p-3 bg-yellow-50 border border-yellow-200 rounded-xl text-sm text-yellow-700">
-              Admin Panel URL not configured. Please set <code className="font-mono bg-yellow-100 px-1 rounded">VITE_ADMIN_URL</code> in Vercel environment variables.
-            </div>
-          )}
-          <button
-            onClick={() => { localStorage.removeItem('token'); localStorage.removeItem('user'); window.location.href = '/login' }}
-            className="block w-full py-3 px-4 bg-gray-100 text-gray-700 rounded-xl font-semibold hover:bg-gray-200 transition-colors"
-          >
-            Logout
-          </button>
-        </div>
-      </div>
-    </div>
-  )
-}
-
 
 function App() {
   const location = useLocation()
@@ -109,6 +48,7 @@ function App() {
       </div>
     }>
       <Routes>
+        {/* Public Website Routes */}
         <Route path="/" element={<PublicLayout />}>
           <Route index element={<Home />} />
           <Route path="about" element={<About />} />
@@ -127,37 +67,15 @@ function App() {
           <Route path="principal-message" element={<PrincipalMessage />} />
         </Route>
 
-        <Route path="/login" element={<AuthLayout />}>
-          <Route index element={<Login />} />
-        </Route>
-
+        {/* All login and admin endpoints redirect directly to Admin Panel */}
+        <Route path="/login" element={<AdminRedirect />} />
+        <Route path="/admin" element={<AdminRedirect />} />
         <Route path="/admin/*" element={<AdminRedirect />} />
-        <Route path="/admin-redirect" element={<AdminPortalPage />} />
+        <Route path="/portal" element={<AdminRedirect />} />
 
-        <Route path="/student" element={<RequireAuth allowedRoles={['student']} />}>
-          <Route element={<StudentLayout />}>
-            <Route index element={<StudentDashboard />} />
-            <Route path="profile" element={<StudentProfile />} />
-            <Route path="routine" element={<StudentRoutine />} />
-            <Route path="attendance" element={<StudentAttendance />} />
-            <Route path="results" element={<StudentResults />} />
-            <Route path="fees" element={<StudentFees />} />
-            <Route path="notices" element={<StudentNotices />} />
-            <Route path="downloads" element={<StudentDownloads />} />
-          </Route>
-        </Route>
-
-        <Route path="/teacher" element={<RequireAuth allowedRoles={['teacher', 'editor', 'moderator']} />}>
-          <Route element={<TeacherLayout />}>
-            <Route index element={<TeacherDashboard />} />
-            <Route path="classes" element={<TeacherClasses />} />
-            <Route path="routine" element={<TeacherRoutine />} />
-            <Route path="attendance" element={<TeacherAttendance />} />
-            <Route path="students" element={<TeacherStudents />} />
-            <Route path="results" element={<TeacherResults />} />
-            <Route path="notices" element={<TeacherNotices />} />
-          </Route>
-        </Route>
+        {/* Redirect former teacher/student URLs to homepage */}
+        <Route path="/teacher/*" element={<Navigate to="/" replace />} />
+        <Route path="/student/*" element={<Navigate to="/" replace />} />
 
         <Route path="*" element={<NotFound />} />
       </Routes>
