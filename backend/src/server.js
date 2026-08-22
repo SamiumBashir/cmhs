@@ -90,8 +90,10 @@ app.set('trust proxy', 1)
 // Strict CORS Configuration (Phase 2)
 const getNormalizedAllowedOrigins = () => {
   const list = [
-    process.env.FRONTEND_URL,
-    process.env.ADMIN_URL,
+    process.env.FRONTEND_URL || 'https://cmhs-nine.vercel.app',
+    process.env.ADMIN_URL || 'https://cmhs-admin-five.vercel.app',
+    'https://cmhs-nine.vercel.app',
+    'https://cmhs-admin-five.vercel.app',
     ...(process.env.ALLOWED_ORIGINS ? process.env.ALLOWED_ORIGINS.split(',') : [])
   ]
     .map(s => s?.trim().replace(/\/$/, ''))

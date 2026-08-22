@@ -16,8 +16,8 @@ const getApiBaseUrl = () => {
     return 'http://localhost:5000/api'
   }
 
-  // Fallback to relative /api
-  return '/api'
+  // Production fallback to Railway API
+  return 'https://cmhs-production.up.railway.app/api'
 }
 
 const API_BASE_URL = getApiBaseUrl()
