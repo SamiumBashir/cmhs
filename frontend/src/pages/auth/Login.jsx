@@ -34,11 +34,12 @@ const Login = () => {
       const result = await login(identifier, password, roleTab)
       const userRole = result?.user?.role || roleTab
 
-      if (location.state?.from?.pathname) {
-        navigate(location.state.from.pathname, { replace: true })
-      } else if (userRole === 'super_admin' || userRole === 'admin') {
+      if (userRole === 'super_admin' || userRole === 'admin') {
         const adminUrl = import.meta.env.VITE_ADMIN_URL || (window.location.hostname.includes('vercel.app') ? 'https://cmhs-admin-five.vercel.app' : 'http://localhost:5174')
-        window.location.href = adminUrl
+        const encodedUser = encodeURIComponent(JSON.stringify(result?.user || {}))
+        window.location.href = `${adminUrl}?token=${result?.token || ''}&user=${encodedUser}`
+      } else if (location.state?.from?.pathname) {
+        navigate(location.state.from.pathname, { replace: true })
       } else if (userRole === 'teacher' || userRole === 'editor' || userRole === 'moderator') {
         navigate('/teacher', { replace: true })
       } else if (userRole === 'student') {

@@ -16,13 +16,43 @@ export const AuthProvider = ({ children }) => {
   const [isAuthenticated, setIsAuthenticated] = useState(false)
 
   useEffect(() => {
+    // Check URL parameters for cross-origin SSO from main website
+    const urlParams = new URLSearchParams(window.location.search)
+    const queryToken = urlParams.get('token')
+    const queryUser = urlParams.get('user')
+
+    if (queryToken) {
+      localStorage.setItem('token', queryToken)
+      setToken(queryToken)
+      api.defaults.headers.common.Authorization = `Bearer ${queryToken}`
+
+      if (queryUser) {
+        try {
+          const parsedUser = JSON.parse(decodeURIComponent(queryUser))
+          localStorage.setItem('user', JSON.stringify(parsedUser))
+          setUser(parsedUser)
+        } catch {
+          // ignore parsing error
+        }
+      }
+      setIsAuthenticated(true)
+      setLoading(false)
+      window.history.replaceState({}, document.title, window.location.pathname)
+      return
+    }
+
     const storedToken = localStorage.getItem('token')
     const storedUser = localStorage.getItem('user')
     if (storedToken && storedUser) {
-      setToken(storedToken)
-      setUser(JSON.parse(storedUser))
-      setIsAuthenticated(true)
-      api.defaults.headers.common.Authorization = `Bearer ${storedToken}`
+      try {
+        setToken(storedToken)
+        setUser(JSON.parse(storedUser))
+        setIsAuthenticated(true)
+        api.defaults.headers.common.Authorization = `Bearer ${storedToken}`
+      } catch {
+        localStorage.removeItem('token')
+        localStorage.removeItem('user')
+      }
     }
     setLoading(false)
   }, [])
