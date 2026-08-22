@@ -51,11 +51,48 @@ const AdminRedirect = () => {
   }, [])
 
   return (
-    <div className="flex items-center justify-center min-h-screen">
+    <div className="flex items-center justify-center min-h-screen bg-gray-50">
       <LoadingSpinner size="xl" />
     </div>
   )
 }
+
+const AdminPortalPage = () => {
+  const adminUrl = import.meta.env.VITE_ADMIN_URL
+
+  return (
+    <div className="flex items-center justify-center min-h-screen bg-gradient-to-br from-primary/10 to-secondary/10">
+      <div className="bg-white rounded-2xl shadow-xl p-8 max-w-md w-full mx-4 text-center">
+        <div className="w-16 h-16 bg-primary/10 rounded-2xl flex items-center justify-center mx-auto mb-4">
+          <span className="text-2xl">🏫</span>
+        </div>
+        <h1 className="text-2xl font-bold text-gray-900 mb-2">Admin Panel</h1>
+        <p className="text-gray-600 mb-6">You are logged in as Admin. The Admin Panel is a separate application.</p>
+        <div className="space-y-3">
+          {adminUrl ? (
+            <a
+              href={adminUrl}
+              className="block w-full py-3 px-4 bg-primary text-white rounded-xl font-semibold hover:bg-primary/90 transition-colors"
+            >
+              Open Admin Panel →
+            </a>
+          ) : (
+            <div className="p-3 bg-yellow-50 border border-yellow-200 rounded-xl text-sm text-yellow-700">
+              Admin Panel URL not configured. Please set <code className="font-mono bg-yellow-100 px-1 rounded">VITE_ADMIN_URL</code> in Vercel environment variables.
+            </div>
+          )}
+          <button
+            onClick={() => { localStorage.removeItem('token'); localStorage.removeItem('user'); window.location.href = '/login' }}
+            className="block w-full py-3 px-4 bg-gray-100 text-gray-700 rounded-xl font-semibold hover:bg-gray-200 transition-colors"
+          >
+            Logout
+          </button>
+        </div>
+      </div>
+    </div>
+  )
+}
+
 
 function App() {
   const location = useLocation()
@@ -94,6 +131,7 @@ function App() {
         </Route>
 
         <Route path="/admin/*" element={<AdminRedirect />} />
+        <Route path="/admin-redirect" element={<AdminPortalPage />} />
 
         <Route path="/student" element={<RequireAuth allowedRoles={['student']} />}>
           <Route element={<StudentLayout />}>
@@ -108,7 +146,7 @@ function App() {
           </Route>
         </Route>
 
-        <Route path="/teacher" element={<RequireAuth allowedRoles={['teacher']} />}>
+        <Route path="/teacher" element={<RequireAuth allowedRoles={['teacher', 'editor', 'moderator']} />}>
           <Route element={<TeacherLayout />}>
             <Route index element={<TeacherDashboard />} />
             <Route path="classes" element={<TeacherClasses />} />

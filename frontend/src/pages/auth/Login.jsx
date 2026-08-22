@@ -43,9 +43,10 @@ const Login = () => {
         } else if (window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1') {
           window.location.href = 'http://localhost:5174'
         } else {
-          navigate('/', { replace: true })
+          // On production Vercel, redirect to admin subdomain or show message
+          navigate('/admin-redirect', { replace: true })
         }
-      } else if (userRole === 'teacher') {
+      } else if (userRole === 'teacher' || userRole === 'editor' || userRole === 'moderator') {
         navigate('/teacher', { replace: true })
       } else if (userRole === 'student') {
         navigate('/student', { replace: true })
