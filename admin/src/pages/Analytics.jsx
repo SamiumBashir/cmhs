@@ -23,8 +23,9 @@ const AdminAnalytics = () => {
 
   const studentCount = students?.pagination?.total || 0
   const teacherCount = teachers?.pagination?.total || 0
-  const pendingAdmissions = admissions?.data?.filter(a => a.status === 'pending').length || 0
-  const approvedAdmissions = admissions?.data?.filter(a => a.status === 'approved').length || 0
+  const pendingAdmissions = Array.isArray(admissions?.data) ? admissions.data.filter(a => a?.status === 'pending').length : 0
+  const approvedAdmissions = Array.isArray(admissions?.data) ? admissions.data.filter(a => a?.status === 'approved').length : 0
+
 
   const classDistribution = [
     { class: 'Nursery', count: Math.floor(studentCount * 0.05) },

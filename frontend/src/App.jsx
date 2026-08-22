@@ -47,7 +47,8 @@ const NotFound = lazy(() => import('./pages/NotFound'))
 
 const AdminRedirect = () => {
   useEffect(() => {
-    window.location.href = import.meta.env.VITE_ADMIN_URL || 'http://localhost:5174'
+    const adminUrl = import.meta.env.VITE_ADMIN_URL || (window.location.hostname.includes('vercel.app') ? 'https://cmhs-admin-five.vercel.app' : 'http://localhost:5174')
+    window.location.href = adminUrl
   }, [])
 
   return (

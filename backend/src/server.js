@@ -169,7 +169,7 @@ app.use('/api/downloads', downloadRoutes)
 app.use('/api/admin/users', adminRoutes)
 app.use('/api/audit-logs', auditLogRoutes)
 
-app.get('/api/health', (req, res) => {
+app.get(['/', '/api', '/api/health'], (req, res) => {
   const mongoStatus = mongoose.connection.readyState === 1 ? 'connected' : 'disconnected'
   const redisClient = getRedis()
   const redisStatus = (redisClient && redisClient.isOpen) ? 'connected' : 'disconnected'
@@ -177,7 +177,7 @@ app.get('/api/health', (req, res) => {
   res.json({
     success: true,
     status: 'ok',
-    message: 'School Management API is running',
+    message: 'Chilahati Merchants High School API is running',
     timestamp: new Date().toISOString(),
     uptime: Math.floor(process.uptime()),
     services: {

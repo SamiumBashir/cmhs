@@ -40,8 +40,10 @@ const AdminDashboard = () => {
     { title: 'Events', value: events?.pagination?.total || '-', icon: <FiCalendar size={28} />, color: 'accent' }
   ]
 
-  const recentNotices = notices?.data?.slice(0, 5) || []
-  const upcomingEvents = events?.data?.slice(0, 3).filter(e => new Date(e.date) >= new Date()) || []
+  const recentNotices = Array.isArray(notices?.data) ? notices.data.slice(0, 5) : []
+  const upcomingEvents = Array.isArray(events?.data)
+    ? events.data.filter(e => e?.date && new Date(e.date) >= new Date()).slice(0, 3)
+    : []
 
   return (
     <div className="space-y-6">

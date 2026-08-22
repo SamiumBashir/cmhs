@@ -41,7 +41,14 @@ const Login = () => {
     setLoading(true)
     try {
       const result = await login(identifier, password, roleTab)
-      if (location.state?.from?.pathname) {
+      const userRole = result?.user?.role || roleTab
+      const frontendUrl = import.meta.env.VITE_FRONTEND_URL || 'https://cmhs-nine.vercel.app'
+
+      if (userRole === 'teacher') {
+        window.location.href = `${frontendUrl}/teacher`
+      } else if (userRole === 'student') {
+        window.location.href = `${frontendUrl}/student`
+      } else if (location.state?.from?.pathname) {
         navigate(location.state.from.pathname, { replace: true })
       } else {
         navigate('/', { replace: true })

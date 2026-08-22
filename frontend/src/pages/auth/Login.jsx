@@ -37,15 +37,8 @@ const Login = () => {
       if (location.state?.from?.pathname) {
         navigate(location.state.from.pathname, { replace: true })
       } else if (userRole === 'super_admin' || userRole === 'admin') {
-        const adminUrl = import.meta.env.VITE_ADMIN_URL
-        if (adminUrl && typeof adminUrl === 'string' && adminUrl.startsWith('http')) {
-          window.location.href = adminUrl
-        } else if (window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1') {
-          window.location.href = 'http://localhost:5174'
-        } else {
-          // On production Vercel, redirect to admin subdomain or show message
-          navigate('/admin-redirect', { replace: true })
-        }
+        const adminUrl = import.meta.env.VITE_ADMIN_URL || (window.location.hostname.includes('vercel.app') ? 'https://cmhs-admin-five.vercel.app' : 'http://localhost:5174')
+        window.location.href = adminUrl
       } else if (userRole === 'teacher' || userRole === 'editor' || userRole === 'moderator') {
         navigate('/teacher', { replace: true })
       } else if (userRole === 'student') {
