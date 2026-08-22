@@ -97,10 +97,14 @@ export const mediaService = {
   upload: (formData) => api.post('/media/upload', formData, {
     headers: { 'Content-Type': 'multipart/form-data' }
   }),
+  uploadDirect: (data) => api.post('/media/upload-direct', data),
+  getCloudinaryAssets: (params) => api.get('/media/cloudinary', { params }),
+  getCloudinaryStatus: () => api.get('/media/cloudinary/status'),
   create: (data) => api.post('/media', data),
   update: (id, data) => api.put(`/media/${id}`, data),
   remove: (id) => api.delete(`/media/${id}`)
 }
+
 
 export const menuService = {
   getAll: (params) => api.get('/menus', { params }),

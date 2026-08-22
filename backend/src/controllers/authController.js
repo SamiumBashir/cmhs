@@ -7,20 +7,23 @@ import { generateToken, generateRefreshToken, verifyToken, verifyRefreshToken } 
 const login = async (req, res, next) => {
   try {
     const { email, identifier, password, role } = req.body
-    const loginId = identifier || email
+    const rawLoginId = (identifier || email || '').trim()
 
-    if (!loginId || !password) {
+    if (!rawLoginId || !password) {
       return res.status(400).json({ success: false, message: 'Please provide login credentials and password' })
     }
+
+    const escapedId = rawLoginId.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')
+    const searchRegex = new RegExp(`^${escapedId}$`, 'i')
 
     // Search Admin user collection first by Email, TeacherId, StudentId, Roll, or Phone
     let user = await Admin.findOne({
       $or: [
-        { email: loginId },
-        { teacherId: loginId },
-        { studentId: loginId },
-        { rollNumber: loginId },
-        { phone: loginId }
+        { email: searchRegex },
+        { teacherId: searchRegex },
+        { studentId: searchRegex },
+        { rollNumber: rawLoginId },
+        { phone: rawLoginId }
       ]
     })
 
@@ -29,17 +32,18 @@ const login = async (req, res, next) => {
     // Fallbacks if user exists in legacy Teacher or Student collections
     if (!user) {
       user = await Teacher.findOne({
-        $or: [{ email: loginId }, { teacherId: loginId }, { phone: loginId }]
+        $or: [{ email: searchRegex }, { teacherId: searchRegex }, { phone: rawLoginId }]
       })
       if (user) userRole = 'teacher'
     }
 
     if (!user) {
       user = await Student.findOne({
-        $or: [{ email: loginId }, { studentId: loginId }, { rollNumber: loginId }]
+        $or: [{ email: searchRegex }, { studentId: searchRegex }, { rollNumber: rawLoginId }]
       })
       if (user) userRole = 'student'
     }
+
 
     if (!user) {
       return res.status(401).json({ success: false, message: 'Invalid credentials or user not found' })

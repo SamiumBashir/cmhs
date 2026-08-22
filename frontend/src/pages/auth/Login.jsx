@@ -37,7 +37,14 @@ const Login = () => {
       if (location.state?.from?.pathname) {
         navigate(location.state.from.pathname, { replace: true })
       } else if (userRole === 'super_admin' || userRole === 'admin') {
-        window.location.href = 'http://localhost:5174'
+        const adminUrl = import.meta.env.VITE_ADMIN_URL
+        if (adminUrl && typeof adminUrl === 'string' && adminUrl.startsWith('http')) {
+          window.location.href = adminUrl
+        } else if (window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1') {
+          window.location.href = 'http://localhost:5174'
+        } else {
+          navigate('/', { replace: true })
+        }
       } else if (userRole === 'teacher') {
         navigate('/teacher', { replace: true })
       } else if (userRole === 'student') {
@@ -50,6 +57,7 @@ const Login = () => {
     } finally {
       setLoading(false)
     }
+
   }
 
   return (

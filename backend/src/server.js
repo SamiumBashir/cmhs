@@ -59,24 +59,44 @@ app.use(helmet({
   }
 }))
 
+app.set('trust proxy', 1)
+
 const allowedOrigins = [
   process.env.FRONTEND_URL,
   process.env.ADMIN_URL,
   ...(process.env.ALLOWED_ORIGINS ? process.env.ALLOWED_ORIGINS.split(',') : [])
-].filter(Boolean)
+].map(s => s?.trim()).filter(Boolean)
 
 app.use(cors({
   origin: (origin, callback) => {
-    // Allow requests with no origin (mobile apps, curl, postman) or localhost in dev
-    if (!origin || origin.includes('localhost') || origin.includes('127.0.0.1')) {
+    // Allow requests with no origin (e.g. mobile apps, curl, postman)
+    if (!origin) return callback(null, true)
+
+    // Allow local development
+    if (origin.includes('localhost') || origin.includes('127.0.0.1')) {
       return callback(null, true)
     }
-    if (allowedOrigins.length === 0 || allowedOrigins.includes(origin)) {
+
+    // Allow any Vercel domain (*.vercel.app and preview domains)
+    if (origin.endsWith('.vercel.app') || origin.includes('vercel.app')) {
       return callback(null, true)
     }
-    return callback(new Error('CORS not allowed for origin: ' + origin))
+
+    // Allow Railway, Render, Netlify deployments
+    if (origin.endsWith('.up.railway.app') || origin.endsWith('.onrender.com') || origin.endsWith('.netlify.app')) {
+      return callback(null, true)
+    }
+
+    // Check allowedOrigins list
+    if (allowedOrigins.length === 0 || allowedOrigins.some(allowed => allowed === origin || origin.startsWith(allowed) || allowed.startsWith(origin))) {
+      return callback(null, true)
+    }
+
+    return callback(null, true)
   },
-  credentials: true
+  credentials: true,
+  methods: ['GET', 'POST', 'PUT', 'DELETE', 'OPTIONS', 'PATCH'],
+  allowedHeaders: ['Content-Type', 'Authorization', 'X-Requested-With', 'Accept', 'Origin']
 }))
 app.use(compression())
 app.use(morgan('combined'))
@@ -89,10 +109,22 @@ app.use(mongoSanitize())
 app.use(xssClean())
 app.use(hpp())
 
+// Ensure MongoDB is connected for serverless environments (e.g. Vercel)
+app.use(async (req, res, next) => {
+  if (mongoose.connection.readyState !== 1) {
+    try {
+      await connectDB()
+    } catch (err) {
+      console.warn('MongoDB connection in request middleware:', err.message)
+    }
+  }
+  next()
+})
+
 // Rate limiters
 const generalLimiter = rateLimit({
   windowMs: 15 * 60 * 1000,
-  max: 500,
+  max: 1000,
   standardHeaders: true,
   legacyHeaders: false,
   message: { success: false, message: 'Too many requests, please try again later.' }
@@ -100,14 +132,16 @@ const generalLimiter = rateLimit({
 
 const loginLimiter = rateLimit({
   windowMs: 15 * 60 * 1000,
-  max: 15,
+  max: 60,
   standardHeaders: true,
   legacyHeaders: false,
+  skipSuccessfulRequests: true,
   message: { success: false, message: 'Too many login attempts. Please try again after 15 minutes.' }
 })
 
 app.use('/api/auth/login', loginLimiter)
 app.use('/api/', generalLimiter)
+
 
 app.use('/api/auth', authRoutes)
 app.use('/api/students', studentRoutes)

@@ -1,24 +1,34 @@
 import axios from 'axios'
 
-const DEFAULT_RAILWAY_URL = 'https://cmhs-production.up.railway.app/api'
-
 const getApiBaseUrl = () => {
   const envUrl = import.meta.env.VITE_API_URL
-  if (envUrl && typeof envUrl === 'string' && !envUrl.startsWith('/') && !envUrl.includes('localhost') && !envUrl.includes('127.0.0.1')) {
-    return envUrl
+  if (envUrl && typeof envUrl === 'string' && envUrl.trim() !== '') {
+    return envUrl.trim()
   }
-  if (import.meta.env.PROD) {
-    return DEFAULT_RAILWAY_URL
+
+  const backendUrl = import.meta.env.VITE_BACKEND_URL
+  if (backendUrl && typeof backendUrl === 'string' && backendUrl.trim() !== '') {
+    const clean = backendUrl.trim().replace(/\/$/, '')
+    return clean.endsWith('/api') ? clean : `${clean}/api`
   }
-  return envUrl || '/api'
+
+  if (import.meta.env.DEV) {
+    return 'http://localhost:5000/api'
+  }
+
+  // Production fallback: If no env variable is specified, use Railway URL or relative /api
+  const defaultUrl = 'https://cmhs-production.up.railway.app/api'
+  return defaultUrl
 }
 
 const API_BASE_URL = getApiBaseUrl()
 
 const api = axios.create({
   baseURL: API_BASE_URL,
-  timeout: 15000
+  timeout: 20000,
+  withCredentials: true
 })
+
 
 api.interceptors.request.use(
   (config) => {

@@ -1,11 +1,17 @@
 import { useState, useRef } from 'react'
-import { FiUploadCloud, FiImage, FiX, FiCheck, FiLink } from 'react-icons/fi'
+import { FiUploadCloud, FiImage, FiX, FiCheck, FiLink, FiFolder, FiSearch } from 'react-icons/fi'
 import { mediaService } from '../../services'
+import Modal from './Modal'
+import LoadingSpinner from './LoadingSpinner'
 
-const ImageUploader = ({ label, value, onChange, placeholder = 'Upload image' }) => {
+const ImageUploader = ({ label, value, onChange, folder = 'school-management/cms', placeholder = 'Upload image' }) => {
   const [uploading, setUploading] = useState(false)
   const [error, setError] = useState('')
   const [showUrlInput, setShowUrlInput] = useState(false)
+  const [showLibraryModal, setShowLibraryModal] = useState(false)
+  const [libraryAssets, setLibraryAssets] = useState([])
+  const [loadingAssets, setLoadingAssets] = useState(false)
+  const [searchFilter, setSearchFilter] = useState('')
   const fileInputRef = useRef(null)
 
   const handleFileChange = async (e) => {
@@ -20,8 +26,8 @@ const ImageUploader = ({ label, value, onChange, placeholder = 'Upload image' })
       return
     }
 
-    if (file.size > 10 * 1024 * 1024) {
-      setError('File size must be less than 10MB')
+    if (file.size > 15 * 1024 * 1024) {
+      setError('File size must be less than 15MB')
       return
     }
 
@@ -31,6 +37,8 @@ const ImageUploader = ({ label, value, onChange, placeholder = 'Upload image' })
     try {
       const formData = new FormData()
       formData.append('file', file)
+      formData.append('folder', folder)
+      formData.append('name', file.name)
 
       const response = await mediaService.upload(formData)
       const uploadedUrl = response.data?.url || response.data?.data?.url
@@ -54,6 +62,31 @@ const ImageUploader = ({ label, value, onChange, placeholder = 'Upload image' })
     }
   }
 
+  const openLibraryModal = async () => {
+    setShowLibraryModal(true)
+    setLoadingAssets(true)
+    try {
+      // First try fetching directly from Cloudinary assets API
+      const cRes = await mediaService.getCloudinaryAssets({ limit: 50 }).catch(() => null)
+      if (cRes?.data?.data?.length) {
+        setLibraryAssets(cRes.data.data.map(item => ({
+          _id: item.public_id,
+          name: item.public_id.split('/').pop(),
+          url: item.url,
+          source: 'cloudinary'
+        })))
+      } else {
+        // Fallback to media records from database
+        const mRes = await mediaService.getAll({ limit: 50 })
+        setLibraryAssets(mRes.data?.data || [])
+      }
+    } catch (err) {
+      console.warn('Could not load library assets:', err)
+    } finally {
+      setLoadingAssets(false)
+    }
+  }
+
   const handleDrop = (e) => {
     e.preventDefault()
     const file = e.dataTransfer.files?.[0]
@@ -64,19 +97,37 @@ const ImageUploader = ({ label, value, onChange, placeholder = 'Upload image' })
     e.preventDefault()
   }
 
+  const isCloudinaryUrl = value && value.includes('cloudinary.com')
+
+  const filteredAssets = libraryAssets.filter(item =>
+    (item.name || '').toLowerCase().includes(searchFilter.toLowerCase()) ||
+    (item.url || '').toLowerCase().includes(searchFilter.toLowerCase())
+  )
+
   return (
     <div className="space-y-1.5">
       {label && (
         <div className="flex items-center justify-between">
           <label className="block text-sm font-medium text-gray-700">{label}</label>
-          <button
-            type="button"
-            onClick={() => setShowUrlInput(!showUrlInput)}
-            className="text-xs text-primary hover:underline flex items-center gap-1"
-          >
-            <FiLink size={12} />
-            {showUrlInput ? 'Upload File' : 'Paste URL'}
-          </button>
+          <div className="flex items-center gap-3">
+            <button
+              type="button"
+              onClick={openLibraryModal}
+              className="text-xs text-primary hover:underline flex items-center gap-1 font-medium"
+            >
+              <FiFolder size={12} />
+              Browse Cloudinary
+            </button>
+            <span className="text-gray-300">|</span>
+            <button
+              type="button"
+              onClick={() => setShowUrlInput(!showUrlInput)}
+              className="text-xs text-primary hover:underline flex items-center gap-1 font-medium"
+            >
+              <FiLink size={12} />
+              {showUrlInput ? 'Upload File' : 'Paste Link'}
+            </button>
+          </div>
         </div>
       )}
 
@@ -86,29 +137,53 @@ const ImageUploader = ({ label, value, onChange, placeholder = 'Upload image' })
             type="text"
             value={value || ''}
             onChange={(e) => onChange(e.target.value)}
-            placeholder="https://example.com/image.jpg"
+            placeholder="https://res.cloudinary.com/... or image link"
             className="w-full px-4 py-2 border border-gray-300 rounded-lg text-sm focus:ring-2 focus:ring-primary focus:border-transparent"
           />
         </div>
       ) : value ? (
-        <div className="relative group border border-gray-200 rounded-xl p-2 bg-gray-50 flex items-center gap-4">
-          <div className="w-16 h-16 rounded-lg overflow-hidden bg-white border border-gray-200 flex-shrink-0 flex items-center justify-center">
+        <div className="relative group border border-gray-200 rounded-xl p-2.5 bg-gray-50 flex items-center gap-4">
+          <div className="w-16 h-16 rounded-lg overflow-hidden bg-white border border-gray-200 flex-shrink-0 flex items-center justify-center relative">
             <img src={value} alt="Preview" className="w-full h-full object-cover" />
           </div>
           <div className="flex-1 min-w-0">
             <p className="text-xs font-semibold text-gray-900 truncate">{value.split('/').pop() || 'Image'}</p>
-            <p className="text-[11px] text-green-600 font-medium flex items-center gap-1 mt-0.5">
-              <FiCheck size={12} /> Image Ready
-            </p>
+            <div className="flex items-center gap-2 mt-1">
+              <span className="text-[11px] text-green-600 font-medium flex items-center gap-1">
+                <FiCheck size={12} /> Ready
+              </span>
+              {isCloudinaryUrl && (
+                <span className="text-[10px] bg-blue-50 text-blue-700 px-1.5 py-0.5 rounded border border-blue-200 font-medium">
+                  Cloudinary ⚡
+                </span>
+              )}
+            </div>
           </div>
-          <button
-            type="button"
-            onClick={() => onChange('')}
-            className="p-1.5 rounded-lg bg-rose-50 text-rose-600 hover:bg-rose-100 transition-colors"
-            title="Remove Image"
-          >
-            <FiX size={16} />
-          </button>
+          <div className="flex items-center gap-1">
+            <button
+              type="button"
+              onClick={() => fileInputRef.current?.click()}
+              className="p-1.5 rounded-lg bg-gray-200 text-gray-700 hover:bg-gray-300 transition-colors text-xs font-medium px-2.5"
+              title="Replace image"
+            >
+              Change
+            </button>
+            <button
+              type="button"
+              onClick={() => onChange('')}
+              className="p-1.5 rounded-lg bg-rose-50 text-rose-600 hover:bg-rose-100 transition-colors"
+              title="Remove Image"
+            >
+              <FiX size={16} />
+            </button>
+          </div>
+          <input
+            ref={fileInputRef}
+            type="file"
+            accept="image/*"
+            onChange={handleFileChange}
+            className="hidden"
+          />
         </div>
       ) : (
         <div
@@ -136,17 +211,71 @@ const ImageUploader = ({ label, value, onChange, placeholder = 'Upload image' })
             </div>
             <div>
               <p className="text-sm font-semibold text-gray-800">
-                {uploading ? 'Uploading picture...' : 'Click to select picture from computer'}
+                {uploading ? 'Uploading to Cloudinary...' : 'Click to select picture from computer'}
               </p>
-              <p className="text-xs text-gray-500">PNG, JPG, WEBP or GIF (Max 10MB)</p>
+              <p className="text-xs text-gray-500">Cloud-optimized image upload (PNG, JPG, WEBP - Max 15MB)</p>
             </div>
           </div>
         </div>
       )}
 
       {error && <p className="text-xs text-rose-600 mt-1 font-medium">{error}</p>}
+
+      {/* Cloudinary / Media Library Modal */}
+      {showLibraryModal && (
+        <Modal
+          isOpen={showLibraryModal}
+          onClose={() => setShowLibraryModal(false)}
+          title="Select Image from Cloudinary Library"
+        >
+          <div className="space-y-4">
+            <div className="flex items-center gap-2 border border-gray-200 rounded-lg px-3 py-1.5 bg-gray-50">
+              <FiSearch className="text-gray-400" size={16} />
+              <input
+                type="text"
+                placeholder="Search images..."
+                value={searchFilter}
+                onChange={(e) => setSearchFilter(e.target.value)}
+                className="bg-transparent text-sm w-full outline-none"
+              />
+            </div>
+
+            {loadingAssets ? (
+              <div className="py-12 flex justify-center">
+                <LoadingSpinner size="md" />
+              </div>
+            ) : filteredAssets.length > 0 ? (
+              <div className="grid grid-cols-3 sm:grid-cols-4 gap-3 max-h-96 overflow-y-auto p-1">
+                {filteredAssets.map((asset) => (
+                  <button
+                    key={asset._id || asset.url}
+                    type="button"
+                    onClick={() => {
+                      onChange(asset.url)
+                      setShowLibraryModal(false)
+                    }}
+                    className="group border border-gray-200 hover:border-primary rounded-lg overflow-hidden flex flex-col items-center bg-white hover:shadow-md transition-all text-left"
+                  >
+                    <div className="aspect-square w-full bg-gray-100 overflow-hidden flex items-center justify-center">
+                      <img src={asset.url} alt={asset.name} className="w-full h-full object-cover group-hover:scale-105 transition-transform" />
+                    </div>
+                    <div className="p-1.5 w-full bg-white">
+                      <p className="text-[11px] font-medium text-gray-800 truncate">{asset.name || 'Image'}</p>
+                    </div>
+                  </button>
+                ))}
+              </div>
+            ) : (
+              <div className="py-8 text-center text-sm text-gray-500">
+                No images found in library. Upload an image above to start.
+              </div>
+            )}
+          </div>
+        </Modal>
+      )}
     </div>
   )
 }
 
 export default ImageUploader
+
