@@ -33,11 +33,19 @@ const Navbar = () => {
   const getDashboardPath = () => {
     if (!user) return '/login'
     if (user.role === 'student') return '/student'
-    if (user.role === 'teacher') return '/teacher'
+    if (user.role === 'teacher' || user.role === 'editor' || user.role === 'moderator') return '/teacher'
     if (user.role === 'super_admin' || user.role === 'admin') {
-      return import.meta.env.VITE_ADMIN_URL || '/login'
+      return import.meta.env.VITE_ADMIN_URL || (window.location.hostname.includes('vercel.app') ? 'https://cmhs-admin-five.vercel.app' : 'http://localhost:5174')
     }
     return '/'
+  }
+
+  const handleDashboardClick = (e) => {
+    const path = getDashboardPath()
+    if (path.startsWith('http')) {
+      e.preventDefault()
+      window.location.href = path
+    }
   }
 
 
@@ -131,7 +139,7 @@ const Navbar = () => {
               {theme === 'light' ? <FiMoon size={18} /> : <FiSun size={18} />}
             </button>
             {isAuthenticated ? (
-              <Link to={getDashboardPath()} className="hidden md:inline-block">
+              <Link to={getDashboardPath()} onClick={handleDashboardClick} className="hidden md:inline-block">
                 <Button variant="primary" size="sm">
                   {language === 'bn' ? 'ড্যাশবোর্ড' : 'Dashboard'}
                 </Button>
@@ -201,7 +209,7 @@ const Navbar = () => {
                   {language === 'bn' ? 'Switch to English' : 'বাংলায় দেখুন'}
                 </button>
                 {isAuthenticated ? (
-                  <Link to={getDashboardPath()} className="flex-1" onClick={closeMobileMenu}>
+                  <Link to={getDashboardPath()} className="flex-1" onClick={(e) => { handleDashboardClick(e); closeMobileMenu() }}>
                     <Button variant="primary" className="w-full">
                       {language === 'bn' ? 'ড্যাশবোর্ড' : 'Dashboard'}
                     </Button>
