@@ -34,7 +34,7 @@ const AdminHeader = ({ onMobileMenuClick }) => {
 
         <div className="flex items-center gap-1 sm:gap-2 flex-shrink-0">
           <a
-            href={import.meta.env.VITE_FRONTEND_URL || 'http://localhost:5173'}
+            href={import.meta.env.VITE_FRONTEND_URL || (window.location.hostname.includes('vercel.app') ? 'https://cmhs-nine.vercel.app' : 'http://localhost:5173')}
             target="_blank"
             rel="noreferrer"
             className="flex items-center gap-1.5 px-3 py-1.5 text-xs font-semibold text-primary bg-primary/10 hover:bg-primary/20 rounded-lg transition-all"
