@@ -1,13 +1,12 @@
 import { motion } from 'framer-motion'
 import { useState } from 'react'
-import { FiUser, FiLock, FiEye, FiEyeOff, FiShield, FiBookOpen, FiUserCheck } from 'react-icons/fi'
+import { FiMail, FiLock, FiEye, FiEyeOff, FiShield, FiExternalLink } from 'react-icons/fi'
 import Button from '../components/ui/Button'
 import Input from '../components/ui/Input'
 import { useAuth } from '../context/AuthContext'
 import { useNavigate, useLocation } from 'react-router-dom'
 
 const Login = () => {
-  const [roleTab, setRoleTab] = useState('admin') // 'admin', 'teacher', 'student'
   const [identifier, setIdentifier] = useState('admin@cmhs.edu.bd')
   const [password, setPassword] = useState('admin123')
   const [showPassword, setShowPassword] = useState(false)
@@ -17,31 +16,13 @@ const Login = () => {
   const navigate = useNavigate()
   const location = useLocation()
 
-  const handleRoleSwitch = (tab) => {
-    setRoleTab(tab)
-    setError('')
-    if (tab === 'admin') {
-      setIdentifier('admin@cmhs.edu.bd')
-      setPassword('admin123')
-    } else if (tab === 'teacher') {
-      setIdentifier('teacher@cmhs.edu.bd')
-      setPassword('teacher123')
-    } else if (tab === 'student') {
-      setIdentifier('student@cmhs.edu.bd')
-      setPassword('student123')
-    } else {
-      setIdentifier('')
-      setPassword('')
-    }
-  }
-
   const handleSubmit = async (e) => {
     e.preventDefault()
     setError('')
     setLoading(true)
     try {
-      const result = await login(identifier, password, roleTab)
-      const userRole = result?.user?.role || roleTab
+      const result = await login(identifier, password, 'admin')
+      const userRole = result?.user?.role || 'admin'
       const frontendUrl = import.meta.env.VITE_FRONTEND_URL || 'https://cmhs-nine.vercel.app'
 
       if (userRole === 'teacher') {
@@ -54,63 +35,35 @@ const Login = () => {
         navigate('/', { replace: true })
       }
     } catch (err) {
-      setError(err.message || 'Login failed. Please check your credentials.')
+      setError(err.message || 'Invalid administrator credentials.')
     } finally {
       setLoading(false)
     }
   }
 
+  const frontendUrl = import.meta.env.VITE_FRONTEND_URL || 'https://cmhs-nine.vercel.app'
+
   return (
     <div className="w-full max-w-md bg-white/10 backdrop-blur-xl p-8 rounded-2xl border border-white/20 shadow-2xl">
       <div className="text-center mb-6">
         <div className="w-16 h-16 rounded-2xl bg-gradient-to-br from-primary to-secondary flex items-center justify-center text-white font-bold text-2xl mx-auto mb-3 shadow-lg">
-          CMHS
+          <FiShield size={28} />
         </div>
-        <h1 className="text-2xl font-bold text-white mb-1">Portal Login</h1>
-        <p className="text-white/80 text-sm">Chilahati Merchants High School</p>
-      </div>
-
-      {/* Role Tabs */}
-      <div className="flex bg-black/20 p-1 rounded-xl mb-6 border border-white/10">
-        <button
-          type="button"
-          onClick={() => handleRoleSwitch('admin')}
-          className={`flex-1 flex items-center justify-center gap-1.5 py-2 rounded-lg text-xs font-semibold transition-all ${roleTab === 'admin' ? 'bg-primary text-white shadow-md' : 'text-white/70 hover:text-white'
-            }`}
-        >
-          <FiShield size={14} /> Admin
-        </button>
-        <button
-          type="button"
-          onClick={() => handleRoleSwitch('teacher')}
-          className={`flex-1 flex items-center justify-center gap-1.5 py-2 rounded-lg text-xs font-semibold transition-all ${roleTab === 'teacher' ? 'bg-primary text-white shadow-md' : 'text-white/70 hover:text-white'
-            }`}
-        >
-          <FiUserCheck size={14} /> Teacher
-        </button>
-        <button
-          type="button"
-          onClick={() => handleRoleSwitch('student')}
-          className={`flex-1 flex items-center justify-center gap-1.5 py-2 rounded-lg text-xs font-semibold transition-all ${roleTab === 'student' ? 'bg-primary text-white shadow-md' : 'text-white/70 hover:text-white'
-            }`}
-        >
-          <FiBookOpen size={14} /> Student
-        </button>
+        <h1 className="text-2xl font-bold text-white mb-1">Admin Portal</h1>
+        <p className="text-white/80 text-sm">Chilahati Merchants High School Management</p>
       </div>
 
       <form onSubmit={handleSubmit} className="space-y-4">
         <div>
           <label className="block text-xs font-medium text-white/90 mb-1">
-            {roleTab === 'admin' ? 'Email Address' : roleTab === 'teacher' ? 'Teacher ID / Email / Phone' : 'Student ID / Roll / Email'}
+            Admin Email or Username
           </label>
           <Input
             type="text"
-            placeholder={
-              roleTab === 'admin' ? 'admin@cmhs.edu.bd' : roleTab === 'teacher' ? 'teacher@cmhs.edu.bd or T-101' : 'student@cmhs.edu.bd or 1001'
-            }
+            placeholder="admin@cmhs.edu.bd"
             value={identifier}
             onChange={(e) => setIdentifier(e.target.value)}
-            icon={<FiUser className="text-gray-400" />}
+            icon={<FiMail className="text-gray-400" />}
             required
             className="bg-white/90 text-gray-900 placeholder-gray-400"
           />
@@ -154,11 +107,21 @@ const Login = () => {
           size="lg"
           fullWidth
           disabled={loading}
-          className="mt-2"
+          className="mt-2 shadow-lg"
         >
-          {loading ? 'Authenticating...' : `Login as ${roleTab.toUpperCase()}`}
+          {loading ? 'Authenticating...' : 'Sign In as Administrator'}
         </Button>
       </form>
+
+      <div className="mt-6 pt-4 border-t border-white/10 text-center">
+        <p className="text-xs text-white/70 mb-2">Are you a Student or Teacher?</p>
+        <a
+          href={`${frontendUrl}/login`}
+          className="inline-flex items-center gap-1 text-xs font-medium text-white hover:text-white/90 underline"
+        >
+          Go to Student / Teacher Login Portal <FiExternalLink size={12} />
+        </a>
+      </div>
     </div>
   )
 }
