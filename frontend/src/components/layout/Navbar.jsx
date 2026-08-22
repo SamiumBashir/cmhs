@@ -4,6 +4,7 @@ import { FiSearch, FiGlobe, FiMoon, FiSun, FiMenu, FiX } from 'react-icons/fi'
 import { motion, AnimatePresence } from 'framer-motion'
 import { useTheme } from '../../context/ThemeContext'
 import { useLanguage } from '../../context/LanguageContext'
+import { useAuth } from '../../context/AuthContext'
 import { useQuery } from '@tanstack/react-query'
 import { settingsService, menuService } from '../../services'
 import Button from '../ui/Button'
@@ -27,7 +28,18 @@ const Navbar = () => {
   const [searchQuery, setSearchQuery] = useState('')
   const { theme, toggleTheme } = useTheme()
   const { language, toggleLanguage } = useLanguage()
-  const adminLoginUrl = `${import.meta.env.VITE_ADMIN_URL || 'http://localhost:5174'}/login`
+  const { user, isAuthenticated } = useAuth()
+
+  const getDashboardPath = () => {
+    if (!user) return '/login'
+    if (user.role === 'student') return '/student'
+    if (user.role === 'teacher') return '/teacher'
+    if (user.role === 'super_admin' || user.role === 'admin') {
+      return import.meta.env.VITE_ADMIN_URL || '/login'
+    }
+    return '/'
+  }
+
 
   const { data: settings } = useQuery({
     queryKey: ['settings'],
@@ -118,9 +130,19 @@ const Navbar = () => {
             >
               {theme === 'light' ? <FiMoon size={18} /> : <FiSun size={18} />}
             </button>
-            <a href={adminLoginUrl} className="hidden md:inline-block">
-              <Button variant="primary" size="sm">{language === 'bn' ? 'লগইন' : 'Login'}</Button>
-            </a>
+            {isAuthenticated ? (
+              <Link to={getDashboardPath()} className="hidden md:inline-block">
+                <Button variant="primary" size="sm">
+                  {language === 'bn' ? 'ড্যাশবোর্ড' : 'Dashboard'}
+                </Button>
+              </Link>
+            ) : (
+              <Link to="/login" className="hidden md:inline-block">
+                <Button variant="primary" size="sm">
+                  {language === 'bn' ? 'লগইন' : 'Login'}
+                </Button>
+              </Link>
+            )}
             <button
               onClick={() => setIsMobileMenuOpen(!isMobileMenuOpen)}
               className="lg:hidden p-2 text-gray-600 hover:bg-gray-100 rounded-lg transition-colors"
@@ -178,9 +200,19 @@ const Navbar = () => {
                   <FiGlobe size={18} className="text-primary" />
                   {language === 'bn' ? 'Switch to English' : 'বাংলায় দেখুন'}
                 </button>
-                <a href={adminLoginUrl} className="flex-1" onClick={closeMobileMenu}>
-                  <Button variant="primary" className="w-full">{language === 'bn' ? 'লগইন' : 'Login'}</Button>
-                </a>
+                {isAuthenticated ? (
+                  <Link to={getDashboardPath()} className="flex-1" onClick={closeMobileMenu}>
+                    <Button variant="primary" className="w-full">
+                      {language === 'bn' ? 'ড্যাশবোর্ড' : 'Dashboard'}
+                    </Button>
+                  </Link>
+                ) : (
+                  <Link to="/login" className="flex-1" onClick={closeMobileMenu}>
+                    <Button variant="primary" className="w-full">
+                      {language === 'bn' ? 'লগইন' : 'Login'}
+                    </Button>
+                  </Link>
+                )}
               </div>
             </nav>
           </motion.div>
