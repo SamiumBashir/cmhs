@@ -1,9 +1,8 @@
 import { useState, useEffect } from 'react'
 import { Link, NavLink } from 'react-router-dom'
 import { motion, AnimatePresence } from 'framer-motion'
-import { FiMenu, FiX, FiSearch, FiGlobe, FiMoon, FiSun, FiShield } from 'react-icons/fi'
+import { FiMenu, FiX, FiSearch, FiGlobe, FiMoon, FiSun } from 'react-icons/fi'
 import { useQuery } from '@tanstack/react-query'
-import Button from '../ui/Button'
 import SearchBar from '../ui/SearchBar'
 import { menuService, settingsService } from '../../services'
 import { useLanguage } from '../../context/LanguageContext'
@@ -16,8 +15,6 @@ const Navbar = () => {
   const [searchQuery, setSearchQuery] = useState('')
   const { language, toggleLanguage } = useLanguage()
   const { theme, toggleTheme } = useTheme()
-
-  const adminUrl = import.meta.env.VITE_ADMIN_URL || (typeof window !== 'undefined' && window.location.hostname.includes('vercel.app') ? 'https://cmhs-admin-five.vercel.app' : 'http://localhost:5174')
 
   const { data: menuData } = useQuery({
     queryKey: ['headerMenus'],
@@ -136,14 +133,6 @@ const Navbar = () => {
               {theme === 'light' ? <FiMoon size={18} /> : <FiSun size={18} />}
             </button>
 
-            {/* Direct Link to Dedicated Admin Panel */}
-            <a href={adminUrl} className="hidden md:inline-block">
-              <Button variant="primary" size="sm" className="flex items-center gap-1.5 shadow-sm">
-                <FiShield size={14} />
-                {language === 'bn' ? 'অ্যাডমিন প্যানেল' : 'Admin Portal'}
-              </Button>
-            </a>
-
             <button
               onClick={() => setIsMobileMenuOpen(!isMobileMenuOpen)}
               className="lg:hidden p-2 text-gray-600 hover:bg-gray-100 rounded-lg transition-colors"
@@ -193,20 +182,14 @@ const Navbar = () => {
                   </NavLink>
                 ))}
               </div>
-              <div className="flex flex-col sm:flex-row gap-3 mt-4 pt-4 border-t border-gray-100">
+              <div className="mt-4 pt-4 border-t border-gray-100 sm:hidden">
                 <button
                   onClick={() => { toggleLanguage(); closeMobileMenu() }}
-                  className="flex items-center justify-center gap-2 px-4 py-2.5 border border-gray-200 rounded-lg text-sm font-medium text-gray-700 hover:bg-gray-50 sm:hidden"
+                  className="flex items-center justify-center gap-2 px-4 py-2.5 border border-gray-200 rounded-lg text-sm font-medium text-gray-700 hover:bg-gray-50 w-full"
                 >
                   <FiGlobe size={18} className="text-primary" />
                   {language === 'bn' ? 'Switch to English' : 'বাংলায় দেখুন'}
                 </button>
-                <a href={adminUrl} className="flex-1" onClick={closeMobileMenu}>
-                  <Button variant="primary" className="w-full flex items-center justify-center gap-2">
-                    <FiShield size={16} />
-                    {language === 'bn' ? 'অ্যাডমিন প্যানেল' : 'Admin Portal'}
-                  </Button>
-                </a>
               </div>
             </nav>
           </motion.div>
