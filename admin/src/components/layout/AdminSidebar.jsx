@@ -17,11 +17,7 @@ const AdminSidebar = ({ mobileOpen, setMobileOpen }) => {
     {
       label: 'Management',
       items: [
-        { path: '/students', icon: <FiUsers size={20} />, label: 'Students' },
-        { path: '/teachers', icon: <FiUsers size={20} />, label: 'Teachers' },
-        { path: '/staff', icon: <FiUsers size={20} />, label: 'Staff' },
-        { path: '/admissions', icon: <FiClipboard size={20} />, label: 'Admissions' },
-        { path: '/attendance', icon: <FiClipboard size={20} />, label: 'Attendance' }
+        { path: '/teachers', icon: <FiUsers size={20} />, label: 'Teachers' }
       ]
     },
     {
